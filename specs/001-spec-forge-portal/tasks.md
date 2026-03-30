@@ -105,31 +105,31 @@ Break down SeqForge Portal implementation into parallel-able, independently test
 
 ### Implementation (T031-T047)
 
-- [ ] T031 Create Organization entity if not exists from OAuth callback (first login creates org)
-- [ ] T032 [P] Implement Project CRUD API routes:
+- [X] T031 Create Organization entity if not exists from OAuth callback (first login creates org)
+- [X] T032 [P] Implement Project CRUD API routes:
   - POST `src/app/api/projects/route.ts` → create project (name, description, branchPattern, projectKey)
   - GET `src/app/api/projects/route.ts` → list projects for org
   - GET `src/app/api/projects/[id]/route.ts` → get project detail
-- [ ] T033 [P] Implement RepoAttachment API routes:
+- [X] T033 [P] Implement RepoAttachment API routes:
   - POST `src/app/api/projects/[id]/repos/route.ts` → attach repo (fullName, defaultBranch)
   - DELETE `src/app/api/projects/[id]/repos/[repoId]/route.ts` → detach repo
-- [ ] T034 [P] Implement Feature creation API route:
+- [X] T034 [P] Implement Feature creation API route:
   - POST `src/app/api/features/route.ts` → create feature (projectId, title, description) → save to DB
   - GET `src/app/api/features/route.ts` → list features for org (with filters by projectId, status)
   - GET `src/app/api/features/[id]/route.ts` → get feature detail (include linked repos, spec revisions)
-- [ ] T035 Create project creation UI component `src/components/feature-form/create-project.tsx` with form (name, repos multi-select from GitHub, branch pattern)
-- [ ] T036 [P] Create repo link UI component `src/components/feature-form/repo-selector.tsx` with GitHub repo search & fetch
-- [ ] T037 [P] Create feature creation UI component `src/components/feature-form/create-feature.tsx` with project selector, title, description fields
-- [ ] T038 [P] Create projects list page `src/app/(dashboard)/projects/page.tsx` with table (name, repos count, features count, actions)
-- [ ] T039 [P] Create project detail page `src/app/(dashboard)/projects/[id]/page.tsx` with repo links, features list, settings link
-- [ ] T040 [P] Create features list page `src/app/(dashboard)/features/page.tsx` with filters (project, status), table showing status, created date, last updated
-- [ ] T041 [P] Create feature detail skeleton at `src/app/(dashboard)/features/[id]/page.tsx` (placeholder for spec editor, will be enhanced in US2)
-- [ ] T042 Create Zustand hook `src/hooks/use-feature.ts` for TanStack Query GET feature data
-- [ ] T043 Create TanStack Query hooks `src/hooks/use-project-list.ts`, `use-project-detail.ts` for project queries
-- [ ] T044 [P] Add audit log entry creation: after project/feature create, call `src/services/audit-service.ts` → log action to AuditLog table
-- [ ] T045 [P] Unit test `src/services/github-app.ts` → mock Octokit, test getRepoInfo() returns correct shape
-- [ ] T046 [P] Integration test API routes: POST /api/projects, POST /api/features with valid payloads, verify DB inserts
-- [ ] T047 [P] E2E test: create project → link repo → create feature, verify feature detail page renders
+- [X] T035 Create project creation UI component `src/components/feature-form/create-project.tsx` with form (name, repos multi-select from GitHub, branch pattern)
+- [X] T036 [P] Create repo link UI component `src/components/feature-form/repo-selector.tsx` with GitHub repo search & fetch
+- [X] T037 [P] Create feature creation UI component `src/components/feature-form/create-feature.tsx` with project selector, title, description fields
+- [X] T038 [P] Create projects list page `src/app/(dashboard)/projects/page.tsx` with table (name, repos count, features count, actions)
+- [X] T039 [P] Create project detail page `src/app/(dashboard)/projects/[id]/page.tsx` with repo links, features list, settings link
+- [X] T040 [P] Create features list page `src/app/(dashboard)/features/page.tsx` with filters (project, status), table showing status, created date, last updated
+- [X] T041 [P] Create feature detail skeleton at `src/app/(dashboard)/features/[id]/page.tsx` (placeholder for spec editor, will be enhanced in US2)
+- [X] T042 Create Zustand hook `src/hooks/use-feature.ts` for TanStack Query GET feature data
+- [X] T043 Create TanStack Query hooks `src/hooks/use-project-list.ts`, `use-project-detail.ts` for project queries
+- [X] T044 [P] Add audit log entry creation: after project/feature create, call `src/services/audit-service.ts` → log action to AuditLog table
+- [X] T045 [P] Unit test `src/services/github-app.ts` → mock Octokit, test getRepoInfo() returns correct shape
+- [X] T046 [P] Integration test API routes: POST /api/projects, POST /api/features with valid payloads, verify DB inserts
+- [X] T047 [P] E2E test: create project → link repo → create feature, verify feature detail page renders
 
 ---
 

@@ -30,33 +30,128 @@ See [docs/constitution.md](docs/constitution.md) for full governance and non-neg
 
 ### Local Development
 
-1. **Clone & install:**
-   ```bash
-   git clone https://github.com/your-org/speqforge.git
-   cd speqforge
-   bun install
-   ```
+#### 1. Clone & Install
+```bash
+git clone https://github.com/your-org/speqforge.git
+cd speqforge
+bun install
+```
 
-2. **Configure environment:**
-   Create `.env.local` with:
-   ```
-   GITHUB_APP_ID=<your-app-id>
-   GITHUB_APP_PRIVATE_KEY=<your-private-key>
-   GITHUB_OAUTH_CLIENT_ID=<oauth-client-id>
-   GITHUB_OAUTH_CLIENT_SECRET=<oauth-secret>
-   DATABASE_URL=file:./prisma/dev.db
-   ```
+#### 2. Create GitHub App for OAuth & Webhooks
 
-3. **Initialize database:**
-   ```bash
-   bunx prisma migrate dev
-   ```
+**Step 1: Create the GitHub App**
+1. Go to **[GitHub Settings → Developer Settings → Apps](https://github.com/settings/apps)**
+2. Click **New GitHub App**
+3. Fill in the following fields:
 
-4. **Run dev server:**
-   ```bash
-   bun run dev
-   ```
-   Open [http://localhost:3000](http://localhost:3000)
+| Field | Value |
+|-------|-------|
+| GitHub App name | `Speqforge` |
+| Homepage URL | `http://localhost:3000` |
+| Webhook URL | `http://localhost:3000/api/github/webhook` |
+| Webhook secret | Generate one: `openssl rand -hex 32` |
+
+**Step 2: Set Up OAuth (Identifying and authorizing users)**
+- **Callback URL**: `http://localhost:3000/auth/callback`
+- ✅ **Expire user authorization tokens** (enabled)
+- ✅ **Request user authorization (OAuth) during installation** (enabled)
+
+**Step 3: Configure Permissions**
+
+Under **Repository permissions**:
+- `Contents` → Read & Write (for creating branches, updating files)
+- `Pull requests` → Read & Write (for creating/managing PRs)
+- `Checks` → Read & Write (for status checks)
+
+Under **Account permissions**:
+- `Email addresses` → Read
+- `User data` → Read
+
+**Step 4: Subscribe to Webhook Events**
+- ✅ `Installation target`
+- ✅ `Push`
+- ✅ `Pull request`
+
+**Step 5: Installation Settings**
+- Select: **Only on this account** (for dev) or **Any account** (for production)
+
+**Step 6: Create the App**
+Click **Create GitHub App** and you'll be taken to the app settings page.
+
+#### 3. Get Your Credentials
+
+On the app settings page:
+1. **Copy App ID** → Add to `.env.local` as `GITHUB_APP_ID`
+2. **Generate Private Key**:
+   - Scroll down to "Private keys"
+   - Click "Generate a private key"
+   - Save the `.pem` file securely
+   - Copy its contents to `.env.local` as `GITHUB_OAUTH_CLIENT_SECRET` (base64 encoded)
+
+For OAuth (user login):
+1. Find **Client ID** in the app settings → Copy to `NEXT_PUBLIC_GITHUB_CLIENT_ID`
+2. Click **Generate a new client secret** → Copy to `GITHUB_OAUTH_CLIENT_SECRET`
+
+#### 4. Configure Environment Variables
+
+Create or update `.env.local`:
+```bash
+# Database
+DATABASE_URL="file:./dev.db"
+
+# GitHub App (from your app settings page)
+GITHUB_APP_ID=your-app-id-here
+GITHUB_APP_PRIVATE_KEY=your-private-key-pem-contents
+GITHUB_APP_WEBHOOK_SECRET=your-webhook-secret-here
+
+# GitHub OAuth (same app)
+NEXT_PUBLIC_GITHUB_CLIENT_ID=your-client-id-here
+GITHUB_OAUTH_CLIENT_SECRET=your-client-secret-here
+
+# Authentication
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=be33a3342959d8cd16cb66fe489e1be6a1c30c20c18f3bbf0c07fe5a682c91f9
+
+# Encryption
+ENCRYPTION_KEY=32d330520fb901bc678eec0025b680b35253e28e335952ca78fbfa0922d09723
+```
+
+⚠️ **Security Note**: Never commit `.env.local` to git. It's already in `.gitignore`.
+
+#### 5. Initialize Database
+```bash
+bunx prisma migrate dev
+```
+
+#### 6. Run Dev Server
+```bash
+bun run dev
+```
+Open [http://localhost:3000](http://localhost:3000) → click **Sign in with GitHub**
+
+#### Testing Your Setup
+
+1. **Login Flow**:
+   - Visit http://localhost:3000/login
+   - Click "Sign in with GitHub"
+   - You'll be redirected to GitHub for authorization
+   - After approval, you'll be logged in and redirected to dashboard
+
+2. **Check Logs**:
+   - If auth fails, check terminal for error messages
+   - Common issues: Missing env vars, incorrect redirect URI, app not installed
+
+3. **Verify Installation**:
+   - Go to **[Your GitHub Settings → Applications → Authorized OAuth Apps](https://github.com/settings/applications)**
+   - You should see "Speqforge" listed
+
+**Troubleshooting:**
+| Error | Solution |
+|-------|----------|
+| "GitHub OAuth not configured" | Check `NEXT_PUBLIC_GITHUB_CLIENT_ID` in `.env.local` |
+| "Invalid client_id" | Verify Client ID matches your app settings |
+| "Redirect URI mismatch" | Ensure callback URL is exactly `http://localhost:3000/auth/callback` |
+| "Failed to fetch user" | Check `GITHUB_OAUTH_CLIENT_SECRET` is correct and not empty |
 
 ### Commands
 - **Dev:** `bun run dev`
