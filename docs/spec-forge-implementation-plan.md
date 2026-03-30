@@ -47,7 +47,7 @@ classDiagram
 | Pattern                      | Example                           | Note                                  |
 |------------------------------|-----------------------------------|---------------------------------------|
 | `feature/{proj}/{id}-{slug}` | `feature/SHOP/1234-add-login`      | Simple flat naming.                   |
-| `specforge/{proj}/{feat}-r{rev}` | `specforge/ACME/321-payment-r2` | Prefix and rev.                       |
+| `speqforge/{proj}/{feat}-r{rev}` | `speqforge/ACME/321-payment-r2` | Prefix and rev.                       |
 | `specs/{slug}-{id}`          | `specs/auth-101`                  | Short prefix only.                    |
 
 These ensure uniqueness and ease of lookup. When a spec is approved, the portal uses the GitHub REST API to:

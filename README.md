@@ -32,8 +32,8 @@ See [docs/constitution.md](docs/constitution.md) for full governance and non-neg
 
 1. **Clone & install:**
    ```bash
-   git clone https://github.com/your-org/specforge.git
-   cd specforge
+   git clone https://github.com/your-org/speqforge.git
+   cd speqforge
    bun install
    ```
 

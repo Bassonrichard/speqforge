@@ -146,7 +146,7 @@ A robust convention is to make branch naming deterministic from `(projectKey, fe
 
 Example pattern (configurable):
 
-`specforge/{projectKey}/{featureId}-{slug}/r{revision}`
+`speqforge/{projectKey}/{featureId}-{slug}/r{revision}`
 
 Determinism matters because it lets you:
 
@@ -162,7 +162,7 @@ A common and low-friction sync model:
 
 - On “Approved,” the portal instructs the GitHub App to:
   - Create branch from default branch (by creating a new ref pointing to a base commit).
-  - Commit spec files into a dedicated directory (example: `specforge/<featureId>/...`).
+  - Commit spec files into a dedicated directory (example: `speqforge/<featureId>/...`).
   - Optionally open a PR titled “Spec: <feature name>” for final approval or traceability.
 
 Creating and managing pull requests through the REST API is explicitly supported.
