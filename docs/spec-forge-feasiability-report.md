@@ -2,7 +2,7 @@
 
 ## Tool landscape and what it implies for Spec Forge
 
-Spec-driven development (SDD) is still a moving target in terms of terminology, but the common thread across the ecosystem is consistent: create a structured, behavior-oriented “spec” in natural language before implementation, and treat that spec as the persistent source of truth that both humans and coding agents refer to (and update) over time. entity["people","Martin Fowler","software author"] characterizes a spec as a structured, behavior-oriented artifact (or set of artifacts) that guides AI coding agents, and notes that different tools vary by spec structure, level of detail, and how those artifacts are organized. citeturn8view2
+Spec-driven development (SDD) is still a moving target in terms of terminology, but the common thread across the ecosystem is consistent: create a structured, behavior-oriented "spec" in natural language before implementation, and treat that spec as the persistent source of truth that both humans and coding agents refer to (and update) over time. Industry leaders characterize a spec as a structured, behavior-oriented artifact (or set of artifacts) that guides AI coding agents, and notes that different tools vary by spec structure, level of detail, and how those artifacts are organized.
 
 Across the tools you listed, there is a clear convergence on a staged flow with explicit checkpoints:
 
@@ -21,14 +21,13 @@ Traycer, in contrast, is productized around orchestrating the plan-execute-verif
 
 The key implication for your vision is that you are not trying to invent SDD. You are targeting a specific adoption bottleneck: shifting the spec and sign-off workflow out of IDE and terminal surfaces so product and business stakeholders can participate without becoming “tool users” first, while still outputting artifacts that developers can consume in their existing agent workflows.
 
-image_group{"layout":"carousel","aspect_ratio":"16:9","query":["GitHub Spec Kit Spec-Driven Development","Kiro specs requirements design tasks screenshot","OpenSpec spec-driven framework","Traycer AI spec-first development","BMAD Method workflow diagram"],"num_per_query":1}
 
 ## Feasibility of a BYOK-first, non-IDE spec workflow
 
 From a pure capability standpoint, your plan is feasible because the two hard integration points are both well-supported in today’s tooling:
 
-- Writing and versioning structured specs as files (Markdown or similar) is a first-class fit for Git workflows and is already the idiom used by Spec Kit, Kiro specs, and OpenSpec. citeturn2view1turn2view2turn3view1turn2view0
-- Repository automation and status tracking can be reliably implemented using a GitHub App, GitHub webhook subscriptions, and the GitHub REST API for branches, refs, and pull requests. citeturn4search5turn4search2turn4search9turn4search1
+- Writing and versioning structured specs as files (Markdown or similar) is a first-class fit for Git workflows and is already the idiom used by Spec Kit, Kiro specs, and OpenSpec.
+- Repository automation and status tracking can be reliably implemented using a GitHub App, GitHub webhook subscriptions, and the GitHub REST API for branches, refs, and pull requests.
 
 The higher-risk part is not “can you do it,” but “can you do it safely and in a way that matches BYOK expectations.”
 
@@ -46,7 +45,7 @@ These patterns are all compatible with your vision, but they imply different pro
 
 If you make business users paste API keys into a web portal, you are accepting a meaningful security and governance burden.
 
-OpenAI’s published guidance is very direct: do not deploy API keys in client-side environments like browsers, route requests through your backend, and sharing API keys is against the Terms of Use. citeturn4search0turn4search12 That pushes Spec Forge toward one of these deployment postures:
+OpenAI's published guidance is very direct: do not deploy API keys in client-side environments like browsers, route requests through your backend, and sharing API keys is against the Terms of Use. That pushes Spec Forge toward one of these deployment postures:
 
 - **Single-tenant or self-hosted inside the organization’s infrastructure** (keys never leave the org boundary).
 - **Multi-tenant SaaS with strong key isolation and enterprise security controls** (KMS, strict RBAC, audit, incident response), plus clear customer responsibility boundaries.
@@ -55,13 +54,13 @@ If BYOK is non-negotiable, you should treat “key custody model” as a first-t
 
 ### Addressing the “no terminal for business users” barrier
 
-Your core problem statement aligns with what enterprise-oriented SDD adoption guidance highlights: SDD adoption requires integration with existing workflows and improved stakeholder collaboration, not just a better prompt loop. entity["organization","InfoQ","software dev media"] emphasizes that at enterprise scale, current SDD tools have gaps and that adoption requires workflow integration and stakeholder collaboration changes to be sustainable. citeturn8view3
+Your core problem statement aligns with what enterprise-oriented SDD adoption guidance highlights: SDD adoption requires integration with existing workflows and improved stakeholder collaboration, not just a better prompt loop. Industry analysis emphasizes that at enterprise scale, current SDD tools have gaps and that adoption requires workflow integration and stakeholder collaboration changes to be sustainable.
 
 There is also evidence from existing tool ergonomics that your “web portal” direction is addressing a real seam:
 
-- Spec Kit is fundamentally CLI-first (`specify`), but it already has ecosystem movement toward “visual orchestrators,” such as a VS Code extension that provides workflow orchestration and phase status visualization, while still requiring the CLI. citeturn9view0
-- Traycer’s onboarding assumes IDE extensions and “open traycer from your IDE,” which is directly at odds with business-side accessibility. citeturn2view3turn10view0
-- Kiro’s specs are presented as an IDE workflow with a dedicated task execution interface, which again is developer-surface oriented. citeturn2view1turn1search1
+- Spec Kit is fundamentally CLI-first (`specify`), but it already has ecosystem movement toward "visual orchestrators," such as a VS Code extension that provides workflow orchestration and phase status visualization, while still requiring the CLI.
+- Traycer's onboarding assumes IDE extensions and "open traycer from your IDE," which is directly at odds with business-side accessibility.
+- Kiro's specs are presented as an IDE workflow with a dedicated task execution interface, which again is developer-surface oriented.
 
 Taken together, there is a credible product gap for a portal that treats specs as first-class, reviewable artifacts for non-engineering stakeholders while still syncing them into repos for developers.
 
@@ -93,18 +92,18 @@ Can live as Next.js server routes initially, but clean separation is recommended
 **GitHub App integration layer**  
 Your GitHub App is the “hands” that writes to repos and listens for changes:
 
-- Create branches and commit spec files by writing Git references and content, which GitHub documents as first-class REST endpoints. citeturn4search2turn4search18
-- Create or update pull requests via REST APIs. citeturn4search9
-- Subscribe to webhook events for push and pull request lifecycle events to update portal state in real time. citeturn4search5turn4search17
-- Optionally create check runs, which GitHub notes must be done via a GitHub App. citeturn4search38
+- Create branches and commit spec files by writing Git references and content, which GitHub documents as first-class REST endpoints.
+- Create or update pull requests via REST APIs.
+- Subscribe to webhook events for push and pull request lifecycle events to update portal state in real time.
+- Optionally create check runs, which GitHub notes must be done via a GitHub App.
 
 **LLM gateway with BYOK controls**  
 You have two realistic implementation options:
 
 - Build a minimal internal gateway: store provider keys in a secrets store, perform server-side calls, log usage, enforce limits.
-- Use an external gateway pattern similar to Vercel AI Gateway BYOK (team-scoped credentials, reuse across projects, optional fallback behavior). citeturn2view5
+- Use an external gateway pattern similar to Vercel AI Gateway BYOK (team-scoped credentials, reuse across projects, optional fallback behavior).
 
-If you want Claude Code users to be able to reuse enterprise auth patterns, note that Claude Code supports multiple auth modes, including `ANTHROPIC_API_KEY` via environment variable and subscription OAuth credentials via `/login`, and keys can take precedence when set. citeturn2view6 This motivates a design where business-side spec generation uses API keys, but developer-side implementation remains flexible and tool-controlled.
+If you want Claude Code users to be able to reuse enterprise auth patterns, note that Claude Code supports multiple auth modes, including `ANTHROPIC_API_KEY` via environment variable and subscription OAuth credentials via `/login`, and keys can take precedence when set. This motivates a design where business-side spec generation uses API keys, but developer-side implementation remains flexible and tool-controlled.
 
 ### Artifact format strategy
 
@@ -116,15 +115,15 @@ A pragmatic baseline is to adopt the cross-tool common denominator:
 - `design.md` (technical approach, diagrams as needed, constraints)
 - `tasks.md` (trackable implementation steps)
 
-This mirrors Kiro’s documented spec core structure and workflow, and is broadly compatible with how developers think about SDD artifacts. citeturn2view1
+This mirrors Kiro's documented spec core structure and workflow, and is broadly compatible with how developers think about SDD artifacts.
 
 From there, add optional export profiles:
 
-- **Spec Kit profile:** generate files and command guidance that match the `/specify` → `/plan` → `/tasks` cadence. citeturn2view2
-- **OpenSpec profile:** generate an OpenSpec folder structure and “propose / continue” guidance that developers can use in supported assistants, leveraging OpenSpec’s broad tool integration and “No API Keys” stance. citeturn2view0turn3view3
-- **BMAD profile:** generate role-oriented artifacts (brief, PRD, architecture, dev plan) that map to its multi-agent workflow positioning. citeturn3view2turn0search23
+- **Spec Kit profile:** generate files and command guidance that match the `/specify` → `/plan` → `/tasks` cadence.
+- **OpenSpec profile:** generate an OpenSpec folder structure and "propose / continue" guidance that developers can use in supported assistants, leveraging OpenSpec's broad tool integration and "No API Keys" stance.
+- **BMAD profile:** generate role-oriented artifacts (brief, PRD, architecture, dev plan) that map to its multi-agent workflow positioning.
 
-Template customization is a core requirement you called out, and Spec Kit provides a strong reference implementation: it supports extensions and presets, explains how template resolution is performed, and documents project-local overrides for one-off adjustments. citeturn9view1turn9view2 Your portal can replicate this as “Template Packs” with priority ordering and per-project overrides.
+Template customization is a core requirement you called out, and Spec Kit provides a strong reference implementation: it supports extensions and presets, explains how template resolution is performed, and documents project-local overrides for one-off adjustments. Your portal can replicate this as "Template Packs" with priority ordering and per-project overrides.
 
 ## Git and multi-repo workflow design
 
@@ -155,7 +154,7 @@ Determinism matters because it lets you:
 - Reconcile portal state from repo state even if webhooks are delayed.
 - Avoid race conditions when multiple users attempt sync.
 
-GitHub’s REST API treats branches as git references and provides endpoints to read and write references, which is the underlying mechanism you need for branch creation by automation. citeturn4search2turn4search34
+GitHub's REST API treats branches as git references and provides endpoints to read and write references, which is the underlying mechanism you need for branch creation by automation.
 
 ### Sync mechanics
 
@@ -166,7 +165,7 @@ A common and low-friction sync model:
   - Commit spec files into a dedicated directory (example: `specforge/<featureId>/...`).
   - Optionally open a PR titled “Spec: <feature name>” for final approval or traceability.
 
-Creating and managing pull requests through the REST API is explicitly supported. citeturn4search9
+Creating and managing pull requests through the REST API is explicitly supported.
 
 - On “Handed off,” developers either:
   - Pull that branch locally and implement directly, or
@@ -174,13 +173,13 @@ Creating and managing pull requests through the REST API is explicitly supported
 
 - On merge, your webhook listener marks the feature complete.
 
-GitHub webhooks are designed for exactly this: real-time notifications for events like commits being pushed and PRs opened or merged. citeturn4search5turn4search17
+GitHub webhooks are designed for exactly this: real-time notifications for events like commits being pushed and PRs opened or merged.
 
 ### Optional: MCP and developer-side context enrichment
 
 You said MCP servers are optional. If you later want to add “context on tap” without forcing developers into a new tool, MCP is a credible integration point.
 
-GitHub documents MCP as a protocol that lets Copilot Chat integrate with other systems and notes growing support for remote MCP servers across major editors. citeturn5view1 In practice, you could ship a “Spec Forge MCP server” that exposes read-only endpoints such as:
+GitHub documents MCP as a protocol that lets Copilot Chat integrate with other systems and notes growing support for remote MCP servers across major editors. In practice, you could ship a "Spec Forge MCP server" that exposes read-only endpoints such as:
 
 - Fetch approved spec revision
 - Fetch clarifying Q&A history

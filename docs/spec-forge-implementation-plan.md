@@ -1,10 +1,10 @@
 # Spec Forge: Implementation Plan (2026)  
 
 ## Executive Summary  
-Spec Forge is a proposed **Next.js web portal** for spec-driven development (SDD) that empowers product and business teams to write requirements without touching an IDE or CLI. It will generate structured specs (requirements, design, tasks), support interactive AI-assisted editing, and then synchronize those specs into GitHub repositories via a GitHub App. Key features include multi-repo project support, configurable branch naming, and a clarifying-question review loop. We will emphasize **BYOK (Bring Your Own Key)** for AI models (e.g. customers supply their OpenAI/Anthropic keys), secure key management (encrypted vaults, KMS), and compliance. The portal will integrate with GitHub Copilot, OpenCode (Codex), and Claude Code workflows, with an optional MCP server for developer context. This report covers feasibility, detailed architecture, data models, security, a phased roadmap with milestones/effort estimates, resource and budget considerations, risk mitigations, testing strategy, and rollout plan. All technical choices leverage existing APIs and best practices (e.g. GitHub REST API for branch/PR creation【8†L598-L607】【16†L945-L954】, Copilot BYOK support【5†L446-L455】, OpenCode/ZEN BYOK【54†L397-L404】, and LLM key security guidelines【30†L1-L4】).
+Spec Forge is a proposed **Next.js web portal** for spec-driven development (SDD) that empowers product and business teams to write requirements without touching an IDE or CLI. It will generate structured specs (requirements, design, tasks), support interactive AI-assisted editing, and then synchronize those specs into GitHub repositories via a GitHub App. Key features include multi-repo project support, configurable branch naming, and a clarifying-question review loop. We will emphasize **BYOK (Bring Your Own Key)** for AI models (e.g. customers supply their OpenAI/Anthropic keys), secure key management (encrypted vaults, KMS), and compliance. The portal will integrate with GitHub Copilot, OpenCode (Codex), and Claude Code workflows, with an optional MCP server for developer context. This report covers feasibility, detailed architecture, data models, security, a phased roadmap with milestones/effort estimates, resource and budget considerations, risk mitigations, testing strategy, and rollout plan. All technical choices leverage existing APIs and best practices (e.g. GitHub REST API for branch/PR creation, Copilot BYOK support, OpenCode/ZEN BYOK, and LLM key security guidelines).
 
 ## System Architecture Overview  
-Spec Forge has three main layers: **Frontend (Next.js UI)**, **Backend/Orchestrator**, and **GitHub Integration (App/Webhooks)**. The UI allows users to create projects, define features, and author specs using markdown editors and AI prompts. The backend handles template rendering and LLM calls via an AI gateway (with BYOK keys stored securely). The GitHub App component executes repository actions: creating branches, committing spec files, opening pull requests, and listening to webhooks. This design is feasible because GitHub’s REST API fully supports all required operations (e.g. creating a branch with `POST /git/refs`【8†L598-L607】, updating files with `PUT /repos/.../contents/...`【46†L480-L489】, and creating PRs with `POST /pulls`【16†L945-L954】). The portal will maintain a backend data model (see below) to track Projects, Features, SpecRevisions, and their links to repo branches. A mermaid flowchart outlines the end-to-end workflow:
+Spec Forge has three main layers: **Frontend (Next.js UI)**, **Backend/Orchestrator**, and **GitHub Integration (App/Webhooks)**. The UI allows users to create projects, define features, and author specs using markdown editors and AI prompts. The backend handles template rendering and LLM calls via an AI gateway (with BYOK keys stored securely). The GitHub App component executes repository actions: creating branches, committing spec files, opening pull requests, and listening to webhooks. This design is feasible because GitHub’s REST API fully supports all required operations (e.g. creating a branch with `POST /git/refs`, updating files with `PUT /repos/.../contents/...`, and creating PRs with `POST /pulls`). The portal will maintain a backend data model (see below) to track Projects, Features, SpecRevisions, and their links to repo branches. A mermaid flowchart outlines the end-to-end workflow:
 
 ```mermaid
 flowchart LR
@@ -51,9 +51,9 @@ classDiagram
 | `specs/{slug}-{id}`          | `specs/auth-101`                  | Short prefix only.                    |
 
 These ensure uniqueness and ease of lookup. When a spec is approved, the portal uses the GitHub REST API to:
-- **Create branch:** `POST /repos/{owner}/{repo}/git/refs` with `{"ref":"refs/heads/<branch>","sha":"<baseCommit>"}`【8†L598-L607】.
-- **Commit spec files:** For each file (`requirements.md`, `design.md`, `tasks.md`), use `PUT /repos/{owner}/{repo}/contents/{path}` with a JSON body including base64-encoded content, commit message, and branch【46†L480-L489】.
-- **Open PR:** `POST /repos/{owner}/{repo}/pulls` with `head=<branch>&base=<defaultBranch>&title=<...>`【16†L945-L954】. The PR can serve as a handover artifact or be optional if direct merge is preferred.
+- **Create branch:** `POST /repos/{owner}/{repo}/git/refs` with `{"ref":"refs/heads/<branch>","sha":"<baseCommit>"}`.
+- **Commit spec files:** For each file (`requirements.md`, `design.md`, `tasks.md`), use `PUT /repos/{owner}/{repo}/contents/{path}` with a JSON body including base64-encoded content, commit message, and branch.
+- **Open PR:** `POST /repos/{owner}/{repo}/pulls` with `head=<branch>&base=<defaultBranch>&title=<...>`. The PR can serve as a handover artifact or be optional if direct merge is preferred.
 
 Once developers finish implementation, their merges back to the default branch trigger the portal via GitHub webhook. Each merged commit is recorded in `RepoSyncRecord`, letting the portal mark the Feature as **Done**.
 
@@ -62,15 +62,15 @@ Spec Forge will support multiple LLM providers. An administrative UI will allow 
 
 | BYOK Pattern        | Key Custodian               | Scope/Use-case                    | Examples/Notes                                           |
 |---------------------|-----------------------------|-----------------------------------|---------------------------------------------------------|
-| **Organization-level** | Org Admin (secret store)  | Enterprise-wide (all team members) | GitHub Copilot Enterprise: admins register custom model keys (Anthropic, OpenAI, etc.)【5†L446-L455】. OpenCode Zen: admins can invite members and share org keys【54†L397-L404】. Billing to provider. |
-| **Team/Workspace**    | Team (gateway service)    | Specific team or group           | Vercel AI Gateway: team-scoped API keys used by all projects【18†L1715-L1723】【18†L1727-L1734】. If user key fails, can fallback to system key. |
-| **User-level**        | Individual (client config) | Single-user or small team        | OpenCode CLI: each developer runs `/connect` and keys go in `~/.local/share/opencode/auth.json`【32†L179-L182】. (Flexibile but riskier.) |
-| **Self-hosted**      | Customer infra (private)   | Dedicated on-prem or VPC         | Organization hosts entire system; keys never leave network. Aligns with provider best practices【30†L1-L4】. |
+| **Organization-level** | Org Admin (secret store)  | Enterprise-wide (all team members) | GitHub Copilot Enterprise: admins register custom model keys (Anthropic, OpenAI, etc.). OpenCode Zen: admins can invite members and share org keys. Billing to provider. |
+| **Team/Workspace**    | Team (gateway service)    | Specific team or group           | Vercel AI Gateway: team-scoped API keys used by all projects. If user key fails, can fallback to system key. |
+| **User-level**        | Individual (client config) | Single-user or small team        | OpenCode CLI: each developer runs `/connect` and keys go in `~/.local/share/opencode/auth.json`. (Flexibile but riskier.) |
+| **Self-hosted**      | Customer infra (private)   | Dedicated on-prem or VPC         | Organization hosts entire system; keys never leave network. Aligns with provider best practices. |
 | **Proxy/Request**    | API Gateway (header)       | Per-request overrides           | Example: use a middleware that forwards an `Authorization` header with provider key for each request (like LiteLLM’s header-forwarding). Enables mixing keys per call. |
 
-The chosen approach for MVP will likely be **Organization-level** (backend-managed keys per org) combined with a **gateway pattern**. For instance, we may integrate Vercel’s AI Gateway concept: save keys under a team and route all LLM calls through that gateway with no modifications to the content【18†L1715-L1723】. Keys are never exposed in browser. User-level BYOK (developers entering their own keys) can be added later if needed, but initial rollout will assume admin-provided keys. All LLM API calls use HTTPS with the official libraries/SDKs. 
+The chosen approach for MVP will likely be **Organization-level** (backend-managed keys per org) combined with a **gateway pattern**. For instance, we may integrate Vercel's AI Gateway concept: save keys under a team and route all LLM calls through that gateway with no modifications to the content. Keys are never exposed in browser. User-level BYOK (developers entering their own keys) can be added later if needed, but initial rollout will assume admin-provided keys. All LLM API calls use HTTPS with the official libraries/SDKs. 
 
-We will also enforce **Prompt Sanitization and Guardrails**: treat all LLM outputs as untrusted【30†L1-L4】, stripping or escaping dangerous patterns. For example, AI-generated code snippets or URLs will be validated server-side before use. This aligns with NVIDIA’s guidance to sanitize all model outputs【30†L1-L4】. We also will **log all prompts and responses** for audit/compliance.
+We will also enforce **Prompt Sanitization and Guardrails**: treat all LLM outputs as untrusted, stripping or escaping dangerous patterns. For example, AI-generated code snippets or URLs will be validated server-side before use. This aligns with NVIDIA's guidance to sanitize all model outputs. We also will **log all prompts and responses** for audit/compliance.
 
 ## Multi-Repo and Branch/PR Workflow  
 Spec Forge handles projects with multiple GitHub repos. Each project has attached Repo records. When a spec is approved, the GitHub App will:
@@ -80,14 +80,14 @@ Spec Forge handles projects with multiple GitHub repos. Each project has attache
 
 This multi-repo strategy means a feature spanning N repos will have N branches. Developers then implement tasks in their respective repos. Because branches share an identifier, the portal can aggregate status (e.g. “all PRs merged” = feature complete). 
 
-We enforce a **freeze-on-handoff** policy: once a spec is handed off (committed and possibly PR-opened), it is locked. Business users cannot alter that spec revision; any changes require creating a new revision (with a new branch, e.g. bumping `r{rev}`). This prevents drift and merge conflicts. We may also implement a **GitHub Check Run** on merge that verifies the spec content hasn’t been tampered with (since check runs require a GitHub App【51†L298-L307】, this is naturally satisfied by our architecture).
+We enforce a **freeze-on-handoff** policy: once a spec is handed off (committed and possibly PR-opened), it is locked. Business users cannot alter that spec revision; any changes require creating a new revision (with a new branch, e.g. bumping `r{rev}`). This prevents drift and merge conflicts. We may also implement a **GitHub Check Run** on merge that verifies the spec content hasn’t been tampered with (since check runs require a GitHub App, this is naturally satisfied by our architecture).
 
 ## Clarifying Question Loop & UX  
 To guide users, Spec Forge implements an **iterative Q&A flow**. After an initial draft, the system presents clarified questions (e.g. Yes/No or multiple-choice) to resolve ambiguities. The UI will show questions one at a time (or in groups), with radio buttons, checkboxes, or text fields. Each answer modifies the spec by re-running the AI model with the additional context. All questions and responses are timestamped and shown in a sidebar (audit log).
 
 Key UX components:
 - **Spec Editor:** A markdown editor with section templates (requirements.md, design.md, tasks.md). Placeholders and help text appear for each section.
-- **Template Packs:** Administrators can define or import template sets. By default, use patterns inspired by tools like Spec Kit and Kiro (breaking down what/how/tasks)【37†L363-L371】.
+- **Template Packs:** Administrators can define or import template sets. By default, use patterns inspired by tools like Spec Kit and Kiro (breaking down what/how/tasks).
 - **Review Diffs:** Every time a spec revision is created, users see a diff view (using GitHub-like UI) comparing it to the previous version.
 - **Status Dashboard:** Projects page listing features and their current status, plus metrics (e.g. number of open specs). Notifications can be emailed or posted to Slack on key events.
 
@@ -97,11 +97,11 @@ Developers need minimal onboarding: they simply pull the branch, and their agent
 Security and governance are paramount:
 
 - **RBAC & Approval Workflow:** Only authorized users (e.g. via SSO groups) can create or approve specs. Actions are audited.
-- **Key Management:** API keys are stored encrypted (e.g. in KMS). Only the backend decrypts them at runtime. Per OpenAI guidance, keys are never placed in client JS【30†L1-L4】.
+- **Key Management:** API keys are stored encrypted (e.g. in KMS). Only the backend decrypts them at runtime. Per OpenAI guidance, keys are never placed in client JS.
 - **Compliance Checks:** We treat all AI data flows as controlled. If needed, integration with security scanning (e.g. SAST on generated code) can be added. 
-- **Prompt Injection Mitigations:** We parameterize prompts to avoid untrusted content insertion. For example, user answers to clarifying questions are sanitized and not used to execute any hidden commands【30†L1-L4】. All AI responses are validated.
-- **Check Runs:** Using the Checks API (via GitHub App) to enforce policies. For example, a check run could reject merges if the feature’s `requirements.md` is missing or not approved. As noted, only GitHub Apps can create check runs【51†L298-L307】, so our architecture naturally enables this.
-- **Third-Party Review:** Since models are involved, we will document the model usage (e.g. which model produced what). We can allow clients to disable certain models (as OpenCode does) for data governance【54†L395-L404】.
+- **Prompt Injection Mitigations:** We parameterize prompts to avoid untrusted content insertion. For example, user answers to clarifying questions are sanitized and not used to execute any hidden commands. All AI responses are validated.
+- **Check Runs:** Using the Checks API (via GitHub App) to enforce policies. For example, a check run could reject merges if the feature’s `requirements.md` is missing or not approved. As noted, only GitHub Apps can create check runs, so our architecture naturally enables this.
+- **Third-Party Review:** Since models are involved, we will document the model usage (e.g. which model produced what). We can allow clients to disable certain models (as OpenCode does) for data governance.
 - **Network Security:** If self-hosted, all network calls (LLM APIs, GitHub API) use TLS and adhere to corporate network policies. Infrastructure secrets are rotated regularly.
 
 Any deviation (e.g. someone tries to write a malicious prompt) is caught by validating all outputs and by requiring an explicit approval step.
@@ -111,7 +111,7 @@ We propose a phased agile development plan. Estimated effort is rough and assume
 
 1. **MVP Phase (0–2 months):**  
    - Deliverables: Core portal setup, GitHub App integration, basic UI (project/feature creation, markdown editor), branch creation and spec commit (hardcoded templates).  
-   - Key tasks: Set up Next.js framework, authenticate with GitHub, implement GitHub App to create a branch and commit two files using GitHub API (Refs API for branch【8†L598-L607】, Contents API for files【46†L480-L489】). Open a PR.  
+   - Key tasks: Set up Next.js framework, authenticate with GitHub, implement GitHub App to create a branch and commit two files using GitHub API (Refs API for branch, Contents API for files). Open a PR.  
    - *Effort:* 4 developer-weeks (1 front-end, 1 back-end).  
    - *Acceptance Criteria:* Successful spec creation in UI, branch and PR appear in GitHub with stub content.
 
@@ -167,7 +167,7 @@ A rough relative scale: SaaS could be on the order of tens of thousands USD/year
 | **Insufficient API Scopes** (GitHub App) | Low            | High          | Grant only needed permissions (contents, checks). Monitor logs. | GitHub actions succeed; no permission error.                |
 | **Adoption Resistance** (users won’t use) | Medium         | Medium        | Involve stakeholders early. Provide training.        | Pilot users report easier workflow vs alternatives.         |
 | **BYOK Policy Violation** (shared keys disallowed) | Low   | High          | Educate users on key policies. Support token-based auth (if needed). | Legal/DevOps approve BYOK approach.                         |
-| **Vendor Lock-in** (relying on Copilot/Specific LLM) | Low   | Medium        | Design agnostic spec formats; support multiple providers【54†L397-L404】. | System works if Copilot disabled; models can be swapped.   |
+| **Vendor Lock-in** (relying on Copilot/Specific LLM) | Low   | Medium        | Design agnostic spec formats; support multiple providers. | System works if Copilot disabled; models can be swapped.   |
 
 Each risk’s mitigation aligns with acceptance criteria. E.g., **merge conflicts** are mitigated by branch strategy and spec freezing. We will formally accept this risk if all pilot merges proceed without conflict.
 
@@ -187,5 +187,5 @@ Metrics for success include reduced time to translate feature requests into tech
 - **Full Rollout:** Based on pilot, refine the product and expand to all teams. Provide support channels (Slack, documentation).  
 - **Feedback Loop:** Maintain backlog of enhancements (additional agents, custom templates) based on usage. Continue to monitor performance and costs.  
 
-This plan balances thoroughness with agility. By iterating in phases and validating each capability (e.g. key security, multi-repo sync) before expanding, we ensure a reliable production system. All critical integrations (GitHub REST endpoints【8†L598-L607】【16†L945-L954】, BYOK mechanisms【54†L397-L404】【5†L446-L455】) rely on documented APIs, which de-risks the implementation. The proposed team and timeline are estimates; actual person-weeks may adjust with complexity. 
+This plan balances thoroughness with agility. By iterating in phases and validating each capability (e.g. key security, multi-repo sync) before expanding, we ensure a reliable production system. All critical integrations (GitHub REST endpoints, BYOK mechanisms) rely on documented APIs, which de-risks the implementation. The proposed team and timeline are estimates; actual person-weeks may adjust with complexity. 
 

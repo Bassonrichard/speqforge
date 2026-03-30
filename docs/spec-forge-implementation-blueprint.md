@@ -1,14 +1,14 @@
 # Spec Forge: Implementation Blueprint (2026)
 
 ## Executive Summary  
-Spec Forge is a planned **Next.js fullstack portal** that lets non-developers write and manage spec-driven requirements without needing a terminal. It will store spec files directly in GitHub (Markdown requirements, design, tasks) and track metadata in a lightweight SQLite database (via Prisma or Drizzle). Key features include multi-repo project support, BYOK model keys, an interactive AI-assisted spec editor with clarifying Q/A, and a handoff workflow for developers. We will integrate with GitHub via a GitHub App: creating branches, committing specs, and opening PRs using GitHub’s REST API【8†L598-L607】【16†L945-L954】. Security controls include encrypted key vaults (KMS), GitHub check runs for gatekeeping, and prompt sanitization【30†L1-L4】. This report covers feasibility, architecture details, data schemas, BYOK options, a phased roadmap with person-week estimates, resource and budget outlines, risk mitigations, testing strategy, and rollout plan. Primary sources include GitHub API docs, Copilot enterprise BYOK guidelines【5†L446-L455】, OpenCode ZEN BYOK docs【54†L397-L404】, and relevant SDD tool guides.
+Spec Forge is a planned **Next.js fullstack portal** that lets non-developers write and manage spec-driven requirements without needing a terminal. It will store spec files directly in GitHub (Markdown requirements, design, tasks) and track metadata in a lightweight SQLite database (via Prisma or Drizzle). Key features include multi-repo project support, BYOK model keys, an interactive AI-assisted spec editor with clarifying Q/A, and a handoff workflow for developers. We will integrate with GitHub via a GitHub App: creating branches, committing specs, and opening PRs using GitHub’s REST API. Security controls include encrypted key vaults (KMS), GitHub check runs for gatekeeping, and prompt sanitization. This report covers feasibility, architecture details, data schemas, BYOK options, a phased roadmap with person-week estimates, resource and budget outlines, risk mitigations, testing strategy, and rollout plan. Primary sources include GitHub API docs, Copilot enterprise BYOK guidelines, OpenCode ZEN BYOK docs, and relevant SDD tool guides.
 
 ## Architecture and Technology Stack  
 The entire backend will be implemented in Next.js (App Router) using **SQLite** (with an ORM like Prisma or Drizzle). Authentication is via GitHub OAuth; spec data is persisted in a local SQLite database. All business logic – including LLM calls and GitHub operations – runs in Next.js server components or API routes, so no separate services are needed. We leverage **Prisma/Drizzle** schemas to define the data model (see below) and generate migrations. 
 
 **Key components:** Next.js pages (React UI), Next.js Server Actions/API routes (AI calls, GitHub App logic), SQLite DB, and the GitHub App. The **GitHub App** (registered in your GitHub account) has permissions to create refs, content, pull requests, and checks. It will use installation tokens for API calls. Webhook routes (e.g. `/api/github/webhook`) handle events like PR merges. All spec content files live in GitHub repos; the SQLite DB only tracks metadata (see Data Model).
 
-This setup is fully feasible: GitHub’s REST API allows creating branches (`POST /repos/{owner}/{repo}/git/refs`)【8†L598-L607】, updating files (`PUT /repos/{owner}/{repo}/contents/{path}`)【46†L480-L489】, and opening PRs (`POST /repos/{owner}/{repo}/pulls`)【16†L945-L954】. We’ll use standard libraries (Octokit) in Node. The LLM gateway will call providers like OpenAI/Anthropic using their SDKs, with keys supplied by customers (BYOK). The MVP will skip complex features like MCP (unspecified requirement) and focus on the core Next.js/SQLite architecture.
+This setup is fully feasible: GitHub's REST API allows creating branches (`POST /repos/{owner}/{repo}/git/refs`), updating files (`PUT /repos/{owner}/{repo}/contents/{path}`), and opening PRs (`POST /repos/{owner}/{repo}/pulls`). We'll use standard libraries (Octokit) in Node. The LLM gateway will call providers like OpenAI/Anthropic using their SDKs, with keys supplied by customers (BYOK). The MVP will skip complex features like MCP (unspecified requirement) and focus on the core Next.js/SQLite architecture.
 
 ## Data Model and SQLite Schema  
 We store only minimal metadata in SQLite (not full spec text). The key tables are:
@@ -52,9 +52,9 @@ Spec Forge supports **multiple LLM providers**. Users can bring keys for OpenAI 
 
 | **BYOK Pattern**        | **Key Storage**                        | **Scope**            | **Example / Notes**                                           |
 |-------------------------|----------------------------------------|----------------------|---------------------------------------------------------------|
-| Organization-level      | Encrypted vault (server-side)          | Org-wide             | GitHub Copilot Enterprise: admin-entered keys for Anthropic/OpenAI【5†L446-L455】. OpenCode Zen: org workspace keys【54†L397-L404】. Keys not in DB plain. |
-| Team/Workspace-scoped   | Team settings (gateway)                | Team or project      | Vercel AI Gateway: team-level API keys that apply to all projects【18†L1715-L1723】【18†L1727-L1734】. |
-| User-specific (optional)| User profile (config file)             | Individual user      | OpenCode CLI (`/connect`), keys stored per user【32†L179-L182】. (Less controlled; not recommended for initial rollout.) |
+| Organization-level      | Encrypted vault (server-side)          | Org-wide             | GitHub Copilot Enterprise: admin-entered keys for Anthropic/OpenAI. OpenCode Zen: org workspace keys. Keys not in DB plain. |
+| Team/Workspace-scoped   | Team settings (gateway)                | Team or project      | Vercel AI Gateway: team-level API keys that apply to all projects. |
+| User-specific (optional)| User profile (config file)             | Individual user      | OpenCode CLI (`/connect`), keys stored per user. (Less controlled; not recommended for initial rollout.) |
 | Self-hosted (private)   | Customer-managed in their infra        | Single-tenant deploy | Entire system on-prem; keys never leave network. Complies with strict policies. |
 | Proxy/Request-overwrite | Request header forwarding (proxy)      | Granular requests    | e.g. adding `Authorization` header per call (LiteLLM style) to use different keys on the fly. |
 
@@ -71,10 +71,10 @@ async function callProvider(provider, prompt) {
 No LLM runs on the client. Optionally, a true proxy (like LiteLLM) could be used to encapsulate tokens. But initially, we directly call provider SDKs in Node.
 
 ### Prompt Injection & Security  
-All user inputs and AI outputs must be sanitized. We treat all LLM results as untrusted (per NVIDIA recommendations)【30†L1-L4】. For example, if the AI returns a code snippet, we sanitize quotes/characters before writing to Git. We also use structured prompts (templates) to avoid code execution. Additionally, sensitive prompts (with business logic) are logged and encrypted in transit. Using an offline key store (KMS) and server-side-only calls adheres to best practices【30†L1-L4】.
+All user inputs and AI outputs must be sanitized. We treat all LLM results as untrusted (per NVIDIA recommendations). For example, if the AI returns a code snippet, we sanitize quotes/characters before writing to Git. We also use structured prompts (templates) to avoid code execution. Additionally, sensitive prompts (with business logic) are logged and encrypted in transit. Using an offline key store (KMS) and server-side-only calls adheres to best practices.
 
 ### Compliance Controls  
-We will likely need audit logging (who approved what, when). GitHub check runs (created by our GitHub App) can enforce policies: e.g. verify that spec files exist, or that certain labels are present before merge. Note: only GitHub Apps can create check runs【51†L298-L307】, so our app has that capability. We will implement a check that a merged PR contains an approved spec (by matching `SpecRevision`). This helps with compliance (e.g. an internal process says "no code merges without spec").
+We will likely need audit logging (who approved what, when). GitHub check runs (created by our GitHub App) can enforce policies: e.g. verify that spec files exist, or that certain labels are present before merge. Note: only GitHub Apps can create check runs, so our app has that capability. We will implement a check that a merged PR contains an approved spec (by matching `SpecRevision`). This helps with compliance (e.g. an internal process says "no code merges without spec").
 
 ## Multi-Repo & Branch/PR Workflows  
 Projects can attach multiple GitHub repos. When a spec is approved:
@@ -98,7 +98,7 @@ Recommended defaults: include project key and feature ID for uniqueness. A table
 | `feature/{projKey}/{feat}`   | `feature/ACME/321-payment`       | Flat pattern, easy read.              |
 | `specs/{slug}/{id}`         | `specs/auth/789`                | Splits slug into folder if needed.    |
 
-These cover most use cases. Branches are created via `POST /git/refs`【8†L598-L607】 and commits made via the Content API【46†L480-L489】. After pushing, we record the branch name and head SHA in `SpecRevision`/`RepoSyncRecord`.
+These cover most use cases. Branches are created via `POST /git/refs` and commits made via the Content API. After pushing, we record the branch name and head SHA in `SpecRevision`/`RepoSyncRecord`.
 
 **Freeze-on-Handoff Policy:** Once a spec revision is handed off (i.e. committed to branches and PRs opened), that spec is considered immutable. Any further edits require a *new SpecRevision* (new branch name, e.g. bump a rev suffix). This ensures code merges are always against a reviewed spec. We enforce this by locking the approved `SpecRevision` record (no more edits to it) and requiring a new revision for changes. Developers will always see the locked spec in the branch – they cannot modify the old spec files without versioning.
 
@@ -135,7 +135,6 @@ Authorization: Bearer <App-Token>
   "sha": "abcdef1234567890"  // base commit SHA (e.g. main)
 }
 ```
-【8†L598-L607】
 
 **Commit spec file (e.g. requirements.md):**
 ```http
@@ -149,7 +148,6 @@ Authorization: Bearer <App-Token>
   "branch": "spec/PRJ/123-feature"
 }
 ```
-【46†L480-L489】
 
 **Open a pull request:**
 ```http
@@ -164,14 +162,13 @@ Authorization: Bearer <App-Token>
   "body": "This PR contains the spec for Feature 123."
 }
 ```
-【16†L945-L954】
 
 These sequences will be implemented in Next.js API routes (server actions) using Octokit.
 
 ## Security & Compliance Controls  
-- **GitHub Checks:** The GitHub App will create a *Check Run* (via `POST /repos/{owner}/{repo}/check-runs`) to enforce that a spec is present before merge【51†L298-L307】. If the spec files are missing or outdated, the check fails. This leverages GitHub’s Checks API (requires GitHub App).
+- **GitHub Checks:** The GitHub App will create a *Check Run* (via `POST /repos/{owner}/{repo}/check-runs`) to enforce that a spec is present before merge. If the spec files are missing or outdated, the check fails. This leverages GitHub's Checks API (requires GitHub App).
 - **Access Control:** Only authenticated users (GitHub SSO) can access the portal. We will map GitHub org/team membership to app roles (e.g. only certain teams can approve specs).
-- **Key Security:** API keys are encrypted at rest. We never send keys to the client. When calling LLMs, we include a user’s key in the Authorization header to the provider, ensuring BYOK usage【54†L397-L404】.
+- **Key Security:** API keys are encrypted at rest. We never send keys to the client. When calling LLMs, we include a user's key in the Authorization header to the provider, ensuring BYOK usage.
 - **Prompt Safeguards:** Prompts and responses are run through sanitizers. For example, we strip any `$(...)` or backtick code injection attempts from user answers. Model outputs are sanitized before committing (no inline HTML, for instance).
 - **Audit Trail:** Actions (spec approvals, PR merges) are logged with timestamps and user IDs. We may periodically export audit logs for compliance review.
 - **Data Residency:** If deployed on-premises (self-hosted option), all data stays within the org’s network. BYOK on-prem ensures no data leaks to third-party AI providers outside approved keys.
@@ -219,8 +216,8 @@ All timelines are approximate. Each phase ends with a review: e.g., a pilot with
 
 | **Pattern**          | **Storage**          | **Scope**            | **Provider Support**  | **Notes**                                    |
 |----------------------|----------------------|----------------------|-----------------------|----------------------------------------------|
-| **Org-level**        | Vault/KMS (server)   | All users in org     | Major (OpenAI, Anthropic) | Keys reused by all; costs billed to prov. 【54†L397-L404】|
-| **Team/Workspace**   | Gateway settings     | Specific team        | Depends on gateway    | e.g. Vercel AI Gateway【18†L1715-L1723】. Single point to update keys. |
+| **Org-level**        | Vault/KMS (server)   | All users in org     | Major (OpenAI, Anthropic) | Keys reused by all; costs billed to prov. |
+| **Team/Workspace**   | Gateway settings     | Specific team        | Depends on gateway    | e.g. Vercel AI Gateway. Single point to update keys. |
 | **User-level**       | Encrypted DB/User    | Individual           | Any                  | Fits BYOC (bring your own *consumer* account). Lower control. |
 | **Self-hosted**      | Customer infra vault | Entire deployment    | Any (within network) | Meets strict compliance; no external deps.  |
 | **Request-Proxy**    | Ephemeral (header)   | Per-call            | Any                  | Like LiteLLM: forward key per call; high flexibility. |
@@ -293,7 +290,7 @@ classDiagram
 | Spec Drift (unapproved edits)   | Low            | Medium     | Freeze specs on approval; require new revision.| No code merged with outdated specs; automated check-runs pass. |
 | Complexity Overrun              | Medium         | Medium     | MVP focus; avoid premature optimization.       | MVP delivered on schedule with core features only.         |
 
-Each risk’s mitigation has clear acceptance criteria. For example, **Spec Drift** is mitigated by locking revisions; we accept the risk when our Check Run prevents any PR merge missing a spec file【51†L298-L307】.
+Each risk’s mitigation has clear acceptance criteria. For example, **Spec Drift** is mitigated by locking revisions; we accept the risk when our Check Run prevents any PR merge missing a spec file.
 
 ## Testing Plan  
 
@@ -311,5 +308,5 @@ Each risk’s mitigation has clear acceptance criteria. For example, **Spec Drif
 - **Gradual Rollout:** After pilot tweaks, expand to other teams. Offer office-hours support.  
 - **Feedback Loop:** Maintain a channel for feature requests and bug reports. Iterate based on adoption metrics.
 
-With this comprehensive plan and architecture, Spec Forge can be built to satisfy enterprise requirements using standard tools, with citations guiding our design choices【8†L598-L607】【16†L945-L954】【5†L446-L455】【54†L397-L404】.
+With this comprehensive plan and architecture, Spec Forge can be built to satisfy enterprise requirements using standard tools, with citations guiding our design choices.
 
