@@ -24,13 +24,13 @@ Break down SeqForge Portal implementation into parallel-able, independently test
 
 **Checkpoint**: All foundation complete before Phase 2 user stories begin
 
-- [ ] T001 Initialize Next.js 16 project with TypeScript strict, Tailwind v4, shadcn/ui at repo root
-- [ ] T002 [P] Create folder structure per plan.md: `src/app`, `src/components`, `src/services`, `src/lib`, `src/types`, `src/hooks`, `src/store`, `prisma/`
-- [ ] T003 [P] Setup Prisma ORM with SQLite: create `prisma/schema.prisma` with base connection config
-- [ ] T004 [P] Configure ESLint, Prettier, TypeScript tsconfig.json per AGENTS.md rules
-- [ ] T005 [P] Setup environment validation: create `src/lib/env.ts` with Zod schema for GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY, LLM keys, DATABASE_URL
-- [ ] T006 [P] Create Prisma client singleton in `src/lib/db.ts` (reusable across server actions/API routes)
-- [ ] T007 [P] Setup Bun scripts in package.json: `dev`, `build`, `start`, `lint`, `test`, `test:e2e`, `db:migrate`, `db:studio`
+- [X] T001 Initialize Next.js 16 project with TypeScript strict, Tailwind v4, shadcn/ui at repo root
+- [X] T002 [P] Create folder structure per plan.md: `src/app`, `src/components`, `src/services`, `src/lib`, `src/types`, `src/hooks`, `src/store`, `prisma/`
+- [X] T003 [P] Setup Prisma ORM with SQLite: create `prisma/schema.prisma` with base connection config
+- [X] T004 [P] Configure ESLint, Prettier, TypeScript tsconfig.json per AGENTS.md rules
+- [X] T005 [P] Setup environment validation: create `src/lib/env.ts` with Zod schema for GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY, LLM keys, DATABASE_URL
+- [X] T006 [P] Create Prisma client singleton in `src/lib/db.ts` (reusable across server actions/API routes)
+- [X] T007 [P] Setup Bun scripts in package.json: `dev`, `build`, `start`, `lint`, `test`, `test:e2e`, `db:migrate`, `db:studio`
 
 ---
 
@@ -42,54 +42,54 @@ Break down SeqForge Portal implementation into parallel-able, independently test
 
 ## 2.1 Database Schema & Migrations
 
-- [ ] T008 Define complete Prisma schema in `prisma/schema.prisma` with all 13 entities (Organization, User, OrgMember, Project, RepoAttachment, Feature, SpecRevision, ClarifyingAnswer, SpecApproval, RepoSyncRecord, WebhookEvent, SpecTemplate, AuditLog, UserKey) per plan.md data model
-- [ ] T009 [P] Create Prisma migrations: `bunx prisma migrate dev --name init` to generate initial migration
-- [ ] T010 [P] Add recommended indexes to schema: (orgId, timestamp) on AuditLog; (featureId, isActive) on SpecRevision; (featureId, syncStatus) on RepoSyncRecord
-- [ ] T011 Setup SQLite fixture/seed data for testing in `prisma/seed.ts`
+- [X] T008 Define complete Prisma schema in `prisma/schema.prisma` with all 13 entities (Organization, User, OrgMember, Project, RepoAttachment, Feature, SpecRevision, ClarifyingAnswer, SpecApproval, RepoSyncRecord, WebhookEvent, SpecTemplate, AuditLog, UserKey) per plan.md data model
+- [X] T009 [P] Create Prisma migrations: `bunx prisma migrate dev --name init` to generate initial migration
+- [X] T010 [P] Add recommended indexes to schema: (orgId, timestamp) on AuditLog; (featureId, isActive) on SpecRevision; (featureId, syncStatus) on RepoSyncRecord
+- [X] T011 Setup SQLite fixture/seed data for testing in `prisma/seed.ts`
 
 ## 2.2 Authentication & Authorization
 
-- [ ] T012 Implement GitHub OAuth flow: create `src/app/(auth)/login/page.tsx` with GitHub sign-in button
-- [ ] T013 [P] Create GitHub OAuth callback handler at `src/app/(auth)/callback/route.ts` (exchange code for token, create/update User in DB)
-- [ ] T014 [P] Implement session middleware in `src/lib/auth.ts`: extract user from GitHub token, validate org membership
-- [ ] T015 [P] Create RBAC checking utility in `src/lib/auth.ts`: `isOrgAdmin()`, `isApprover()`, `canApproveSpecs()` (check OrgMember role)
-- [ ] T016 [P] Setup protected layout at `src/app/(dashboard)/layout.tsx` with session check redirect to login
+- [X] T012 Implement GitHub OAuth flow: create `src/app/(auth)/login/page.tsx` with GitHub sign-in button
+- [X] T013 [P] Create GitHub OAuth callback handler at `src/app/(auth)/callback/route.ts` (exchange code for token, create/update User in DB)
+- [X] T014 [P] Implement session middleware in `src/lib/auth.ts`: extract user from GitHub token, validate org membership
+- [X] T015 [P] Create RBAC checking utility in `src/lib/rbac.ts`: `isOrgAdmin()`, `isApprover()`, `canApproveSpecs()` (check OrgMember role)
+- [X] T016 [P] Setup protected layout at `src/app/(dashboard)/layout.tsx` with session check redirect to login
 
 ## 2.3 LLM Gateway & Crypto
 
-- [ ] T017 Implement LLM gateway in `src/services/llm-gateway.ts`: 
+- [X] T017 Implement LLM gateway in `src/services/llm-gateway.ts`:
   - `selectProvider(orgId, provider?)` → decrypt key from DB, return configured SDK
   - `callProvider(prompt, provider, orgId)` → call OpenAI or Anthropic SDK with user's key
   - Error handling for rate limits, invalid keys, timeouts
-- [ ] T018 [P] Implement encryption/decryption in `src/lib/crypto.ts`: AES-256-GCM with Node.js crypto module
+- [X] T018 [P] Implement encryption/decryption in `src/lib/crypto.ts`: AES-256-GCM with Node.js crypto module
   - `encryptKey(plainKey: string): {encryptedKey, iv}`
   - `decryptKey(encryptedKey: string, iv: string): string`
-- [ ] T019 [P] Create `src/types/errors.ts`: custom error classes (InvalidKeyError, LLMError, SyncError, ValidationError)
+- [X] T019 [P] Create `src/types/errors.ts`: custom error classes (InvalidKeyError, LLMError, SyncError, ValidationError)
 
 ## 2.4 GitHub App Integration
 
-- [ ] T020 Create GitHub App service in `src/services/github-app.ts`:
+- [X] T020 Create GitHub App service in `src/services/github-app.ts`:
   - `getInstallationToken(orgId, repoFullName)` → use octokit App to fetch token per installation
   - `createBranch(token, owner, repo, branchName, baseSha)` → POST /repos/{owner}/{repo}/git/refs
   - `commitFiles(token, owner, repo, branch, files[], message)` → PUT /repos/{owner}/{repo}/contents/{path}
   - `createPullRequest(token, owner, repo, head, base, title, body)` → POST /repos/{owner}/{repo}/pulls
   - `getRepoInfo(token, owner, repo)` → GET repo details (default branch, permissions)
-- [ ] T021 [P] Setup webhook signature verification in `src/lib/utils.ts`: verify GitHub HMAC-SHA256 signature
-- [ ] T022 [P] Create GitHub API types in `src/types/github.ts` for common responses (Repository, PullRequest, Ref, etc.)
+- [X] T021 [P] Setup webhook signature verification in `src/lib/utils.ts`: verify GitHub HMAC-SHA256 signature
+- [X] T022 [P] Create GitHub API types in `src/types/github.ts` for common responses (Repository, PullRequest, Ref, etc.)
 
 ## 2.5 API Routes & Error Handling
 
-- [ ] T023 Create base API error handler: `src/lib/utils.ts` → `ApiError` class, standardized response format {success, data, error}
-- [ ] T024 [P] Setup API route patterns in `src/app/api/`, all routes validate session before processing
-- [ ] T025 [P] Create request/response validation schemas in `src/lib/validation.ts` using Zod (FeatureInput, SpecRevisionInput, ApprovalInput, etc.)
+- [X] T023 Create base API error handler: `src/lib/utils.ts` → `ApiError` class, standardized response format {success, data, error}
+- [X] T024 [P] Setup API route patterns in `src/app/api/`, all routes validate session before processing
+- [X] T025 [P] Create request/response validation schemas in `src/lib/validation.ts` using Zod (FeatureInput, SpecRevisionInput, ApprovalInput, etc.)
 
 ## 2.6 Frontend State & Data Fetching
 
-- [ ] T026 Setup Zustand store at `src/store/auth-store.ts`: current user, org context, auth status
-- [ ] T027 [P] Setup Zustand store at `src/store/ui-store.ts`: modal states, selected project filter, toast notifications
-- [ ] T028 [P] Create TanStack Query hooks in `src/hooks/use-feature.ts`, `use-project.ts`, `use-spec-revision.ts` for server state (caching, invalidation)
-- [ ] T029 [P] Setup custom error boundary component at `src/components/error-boundary.tsx`
-- [ ] T030 [P] Create layout wrapper at `src/app/(dashboard)/layout.tsx` with sidebar navigation, user menu
+- [X] T026 Setup Zustand store at `src/store/auth-store.ts`: current user, org context, auth status
+- [X] T027 [P] Setup Zustand store at `src/store/ui-store.ts`: modal states, selected project filter, toast notifications
+- [X] T028 [P] Create TanStack Query hooks in `src/hooks/use-feature.ts`, `use-project.ts`, `use-spec-revision.ts` for server state (caching, invalidation)
+- [X] T029 [P] Setup custom error boundary component at `src/components/error-boundary.tsx`
+- [X] T030 [P] Create layout wrapper at `src/app/(dashboard)/layout.tsx` with sidebar navigation, user menu
 
 **Checkpoint**: Foundation complete. All 9 user stories can now proceed in parallel.
 

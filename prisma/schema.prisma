@@ -1,0 +1,294 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================================================
+// AUTHENTICATION & AUTHORIZATION
+// ============================================================================
+
+// GitHub user (authenticated via OAuth)
+model User {
+  id            String    @id // GitHub user ID (string)
+  username      String    @unique
+  email         String?   @unique
+  avatarUrl     String?
+  githubToken   String    // GitHub personal access token for API calls
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  orgMemberships OrgMember[]
+
+  @@index([username])
+}
+
+// Represents a customer workspace
+model Organization {
+  id                String    @id @default(cuid())
+  name              String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // BYOK LLM config
+  aiSettings        Json      // {defaultProvider: "openai", providers: ["openai", "anthropic"]}
+  approvalThreshold String    @default("SINGLE") // SINGLE | UNANIMOUS | MAJORITY
+  defaultApproverId String?   // User ID of default approver
+
+  // Relations
+  members           OrgMember[]
+  projects          Project[]
+  userKeys          UserKey[]
+  templates         SpecTemplate[]
+  auditLog          AuditLog[]
+  repos            RepoAttachment[]
+}
+
+// Organization membership with roles
+model OrgMember {
+  id            String   @id @default(cuid())
+  orgId         String
+  userId        String
+  role          String   // ADMIN | MEMBER | APPROVER | REVIEWER
+  joinedAt      DateTime @default(now())
+
+  organization  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, userId])
+  @@index([orgId])
+}
+
+// Encrypted LLM API keys
+model UserKey {
+  id            String    @id @default(cuid())
+  orgId         String
+  provider      String    // openai | anthropic | google_ai | etc.
+  encryptedKey  String    // AES-256-GCM encrypted key
+  iv            String    // Initialization vector for decryption
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  organization  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, provider])
+  @@index([orgId])
+}
+
+// ============================================================================
+// PROJECT & REPO MANAGEMENT
+// ============================================================================
+
+// Project groups features and repos
+model Project {
+  id                String    @id @default(cuid())
+  orgId             String
+  name              String
+  description       String?
+  branchPattern     String    @default("spec/{projectKey}/{featureId}-{slug}") // Configurable naming
+  projectKey        String    @unique // e.g., SHOP, ACME for branch names
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  organization      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  repos             RepoAttachment[]
+  features          Feature[]
+
+  @@unique([orgId, projectKey])
+  @@index([orgId])
+}
+
+// Links a GitHub repository to a project
+model RepoAttachment {
+  id                String    @id @default(cuid())
+  projectId         String
+  orgId             String
+  fullName          String    // owner/repo-name
+  defaultBranch     String    @default("main")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  organization      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  syncRecords       RepoSyncRecord[]
+
+  @@unique([projectId, fullName])
+  @@index([projectId])
+  @@index([orgId])
+}
+
+// ============================================================================
+// FEATURE & SPEC MANAGEMENT
+// ============================================================================
+
+// A feature to be specified and implemented
+model Feature {
+  id                String    @id @default(cuid())
+  projectId         String
+  title             String
+  description       String?   // Initial user description
+  status            String    @default("DRAFT") // DRAFT | APPROVED | HANDED_OFF | IN_PROGRESS | IN_MERGE | COMPLETE
+  createdBy         String    // User ID
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  completedAt       DateTime?
+
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  specs             SpecRevision[]
+  syncRecords       RepoSyncRecord[]
+  approvals         SpecApproval[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+// Immutable record of a spec version
+model SpecRevision {
+  id                String    @id @default(cuid())
+  featureId         String
+  revNumber         Int       @default(1) // r1, r2, r3, etc.
+  branchName        String    // e.g., spec/PRJ/123-feature-x or spec/PRJ/123-feature-x-r2
+  commitSha         String    // Reference to Git commit containing spec files
+  isActive          Boolean   @default(true) // Only latest approved revision is active
+  status            String    @default("DRAFT") // DRAFT | APPROVED | HANDED_OFF
+  approvedBy        String?   // User ID of approver
+  approvedAt        DateTime?
+  createdAt         DateTime  @default(now())
+
+  feature           Feature   @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  answers           ClarifyingAnswer[]
+  approvals         SpecApproval[]
+  syncRecords       RepoSyncRecord[]
+
+  @@unique([featureId, revNumber])
+  @@index([featureId, isActive])
+}
+
+// Stores answers to clarifying questions
+model ClarifyingAnswer {
+  id                String    @id @default(cuid())
+  specRevId         String
+  questionNumber    Int       // 1, 2, 3
+  question          String
+  answer            String    // User's answer or selection
+  createdAt         DateTime  @default(now())
+
+  spec              SpecRevision @relation(fields: [specRevId], references: [id], onDelete: Cascade)
+
+  @@unique([specRevId, questionNumber])
+  @@index([specRevId])
+}
+
+// Approval workflow tracking
+model SpecApproval {
+  id                String    @id @default(cuid())
+  specRevId         String
+  featureId         String
+  requestedBy       String    // User ID who requested review
+  assignedTo        Json?     // User IDs of assigned reviewers (stored as JSON array)
+  approvedBy        Json?     // User IDs who approved (stored as JSON array)
+  rejectedBy        String?   // If rejected, by whom
+  comments          String?   // Reviewer feedback
+  status            String    @default("PENDING") // PENDING | APPROVED | REJECTED | IN_REVIEW
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  spec              SpecRevision @relation(fields: [specRevId], references: [id], onDelete: Cascade)
+  feature           Feature   @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([specRevId])
+  @@index([specRevId])
+  @@index([featureId])
+}
+
+// ============================================================================
+// GITHUB INTEGRATION & SYNC
+// ============================================================================
+
+// Tracks where a spec rev has been synced in repos
+model RepoSyncRecord {
+  id                String    @id @default(cuid())
+  specRevId         String
+  repoId            String
+  featureId         String
+  branch            String    // e.g., spec/PRJ/123-feature-x
+  commitSha         String?   // SHA of commit with spec files
+  prUrl             String?   // Link to PR in this repo
+  syncStatus        String    // PENDING | COMMITTED | PR_OPEN | MERGED | FAILED
+  errorMessage      String?   // If failed, why
+  syncedAt          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  spec              SpecRevision @relation(fields: [specRevId], references: [id], onDelete: Cascade)
+  repo              RepoAttachment @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  feature           Feature   @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([specRevId, repoId])
+  @@index([featureId, syncStatus])
+  @@index([repoId])
+}
+
+// GitHub webhook events log (for status tracking)
+model WebhookEvent {
+  id                String    @id @default(cuid())
+  featureId         String
+  orgId             String
+  eventType         String    // pull_request | push | check_run | etc.
+  githubPayload     Json      // Full webhook payload for debugging
+  status            String    // PULL_REQUEST_OPENED | PULL_REQUEST_MERGED | ERROR
+  processedAt       DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([featureId])
+  @@index([orgId])
+}
+
+// ============================================================================
+// TEMPLATES & CONFIGURATION
+// ============================================================================
+
+// Spec templates (org-wide, managed by admins)
+model SpecTemplate {
+  id                String    @id @default(cuid())
+  orgId             String
+  name              String    // e.g., "Requirements + Design + Tasks"
+  content           String    // Markdown template with [[PLACEHOLDERS]]
+  isDefault         Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  uploadedBy        String    // User ID
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  organization      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, name])
+  @@index([orgId])
+}
+
+// ============================================================================
+// AUDIT & COMPLIANCE
+// ============================================================================
+
+// Audit log for compliance
+model AuditLog {
+  id                String    @id @default(cuid())
+  orgId             String
+  userId            String
+  action            String    // SPEC_CREATED | SPEC_APPROVED | BRANCH_SYNCED | etc.
+  resourceType      String    // Feature | SpecRevision | etc.
+  resourceId        String
+  details           Json?     // Additional context
+  timestamp         DateTime  @default(now())
+
+  organization      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, timestamp])
+  @@index([userId])
+}
