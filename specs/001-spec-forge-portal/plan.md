@@ -1,13 +1,13 @@
-# Implementation Plan: Spec Forge Portal
+# Implementation Plan: SeqForge Portal
 
 **Branch**: `001-spec-forge-portal` | **Date**: 2026-03-30 | **Spec**: [spec.md](spec.md)  
 **Status**: Planning Phase | **Target Completion**: TBD (4-6 week MVP estimate)
 
 ## Summary
 
-Spec Forge Portal is a web-based, spec-driven development (SDD) platform that enables business users to author, refine, and hand off software specifications to developers without IDE/terminal access. Business analysts and product owners create projects, link GitHub repositories, write high-level feature descriptions, and receive AI-generated structured specs (requirements, design, tasks). An interactive clarifying-question workflow refines ambiguous specs. Once approved, specs are automatically synced to multi-repo branches via a GitHub App, with feature status tracked throughout the developer lifecycle. The portal implements BYOK (Bring Your Own Key) LLM integration, role-based access control, and freeze-on-handoff governance to prevent spec drift.
+SeqForge Portal is a web-based, spec-driven development (SDD) platform that enables business users to author, refine, and hand off software specifications to developers without IDE/terminal access. Business analysts and product owners create projects, link GitHub repositories, write high-level feature descriptions, and receive AI-generated structured specs (requirements, design, tasks). An interactive clarifying-question workflow refines ambiguous specs. Once approved, specs are automatically synced to multi-repo branches via a GitHub App, with feature status tracked throughout the developer lifecycle. The portal implements BYOK (Bring Your Own Key) LLM integration, role-based access control, and freeze-on-handoff governance to prevent spec drift.
 
-**Core Technical Approach**: Full-stack Next.js application (frontend + backend) with SQLite persistence, GitHub App integration via Octokit, configurable LLM provider gateway (OpenAI/Anthropic), and webhook-driven event processing for repo sync and status updates.
+**Core Technical Approach**: Full-stack Next.js application (frontend + backend) with SQLite persistence, GitHub App integration via Octokit, configurable LLM provider gateway (OpenAI/Anthropic), and webhook-driven event processing for repo sync and status updates. SeqForge uses a unified platform approach where all spec creation, approval, and GitHub integration happen through the web portal with no terminal/CLI required.
 
 ## Technical Context
 
@@ -219,7 +219,7 @@ tests/
 ### Research Tasks
 
 1. **GitHub App Registration & Permissions**  
-   - Investigate: Which permissions (refs, content, pull-requests, checks, webhooks) are sufficient for Spec Forge?  
+   - Investigate: Which permissions (refs, content, pull-requests, checks, webhooks) are sufficient for SeqForge?  
    - Reference: [GitHub App docs](https://docs.github.com/en/apps)  
    - Decision: Document required permissions in `research.md` + provide terraform/curl examples for app creation.
 

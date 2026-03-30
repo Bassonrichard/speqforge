@@ -1,9 +1,9 @@
-# Feature Specification: Spec Forge Portal
+# Feature Specification: SeqForge Portal
 
 **Feature Branch**: `001-spec-forge-portal`  
 **Created**: 2026-03-30  
 **Status**: Draft  
-**Input**: "Spec Forge Portal: Web-based spec-driven development platform for business users"
+**Input**: "SeqForge Portal: Web-based spec-driven development platform for business users"
 
 ## Clarifications
 
@@ -25,7 +25,7 @@
 
 ### User Story 1 - Business User Creates Project and Feature (Priority: P1)
 
-A product owner or business analyst opens the Spec Forge portal, creates a new project, links one or more GitHub repositories, and initiates a new feature by writing a high-level feature description. This is the core entry point that enables non-technical stakeholders to engage with spec-driven development.
+A product owner or business analyst opens the SeqForge portal, creates a new project, links one or more GitHub repositories, and initiates a new feature by writing a high-level feature description. This is the core entry point that enables non-technical stakeholders to engage with spec-driven development.
 
 **Why this priority**: This is the foundation of the entire system. Without the ability to create projects and features, the portal has no value. This story represents the "create" phase in the spec-driven workflow and directly addresses the key problem statement: enabling business users to engage without IDE/terminal access.
 

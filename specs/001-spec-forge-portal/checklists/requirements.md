@@ -1,8 +1,8 @@
-# Specification Quality Checklist: Spec Forge Portal
+# Specification Quality Checklist: SeqForge Portal
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-03-30
-**Feature**: [Spec Forge Portal](../spec.md)
+**Feature**: [SeqForge Portal](../spec.md)
 
 ## Content Quality
 

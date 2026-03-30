@@ -5,7 +5,7 @@
 **Amendment Type**: Initial ratification
 
 ## Summary
-Spec Forge Constitution ratified with 5 core principles and governance framework. All placeholders from template filled with project-specific values derived from the 2026 implementation blueprint.
+SeqForge Constitution ratified with 5 core principles and governance framework. All placeholders from template filled with project-specific values derived from the 2026 implementation blueprint.
 
 ## Core Principles (New)
 1. **No-Terminal Portal** — Non-negotiable; business users use web UI only
@@ -49,7 +49,7 @@ Spec Forge Constitution ratified with 5 core principles and governance framework
 
 ## Suggested Commit
 ```
-docs: ratify Spec Forge Constitution v1.0.0
+docs: ratify SeqForge Constitution v1.0.0
 
 Add core principles (No-Terminal Portal, GitHub-Native, BYOK, Immutable Specs, Security-First).
 Define technology stack (Next.js 16, SQLite+Prisma, Octokit, GitHub App).
@@ -60,7 +60,7 @@ Fixes: constitution population for project initialization
 ```
 -->
 
-# Spec Forge Constitution
+# SeqForge Constitution
 
 ## Core Principles
 
