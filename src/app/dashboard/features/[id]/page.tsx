@@ -13,6 +13,9 @@ import { useFeatureHistory } from '@/hooks/use-feature-history';
 import { SpecEditor } from '@/components/spec-editor/spec-editor';
 import { StatusBadge, type FeatureStatus } from '@/components/ui/status-badge';
 import { StatusTimeline } from '@/components/ui/status-timeline';
+import { ReviewerSelector } from '@/components/feature-approval/reviewer-selector';
+import { ApprovalStatus } from '@/components/feature-approval/approval-status';
+import { useAuthStore } from '@/store/auth-store';
 
 interface FeatureDetailPageProps {
   params: Promise<{ id: string }>;
@@ -20,6 +23,10 @@ interface FeatureDetailPageProps {
 
 export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
   const [featureId, setFeatureId] = React.useState<string>('');
+  const { session } = useAuthStore();
+  const [organization, setOrganization] = React.useState<{
+    approvalThreshold: 'SINGLE' | 'UNANIMOUS' | 'MAJORITY';
+  } | null>(null);
 
   React.useEffect(() => {
     if (params instanceof Promise) {
@@ -27,8 +34,29 @@ export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
     }
   }, [params]);
 
-  const { data: feature, isLoading, error } = useFeature(featureId);
+  const { data: feature, isLoading, error, refetch } = useFeature(featureId);
   const { data: history, isLoading: historyLoading } = useFeatureHistory(featureId);
+
+  // Load organization data for approval threshold
+  React.useEffect(() => {
+    if (!session?.organizationId) return;
+
+    const loadOrg = async () => {
+      try {
+        const response = await fetch(`/api/auth/organizations/${session.organizationId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setOrganization({
+            approvalThreshold: data.organization.approvalThreshold,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load organization data:', err);
+      }
+    };
+
+    loadOrg();
+  }, [session?.organizationId]);
 
   const handleStatusTransition = async (newStatus: FeatureStatus) => {
     if (!featureId) return;
@@ -225,21 +253,25 @@ export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
         </div>
       )}
 
-      {/* Approvals */}
-      {feature.latestApproval && (
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Approval Status</h2>
-          <div className="rounded-lg border border-gray-200 p-6">
-            <p className="text-sm text-gray-600">Status</p>
-            <p className="text-xl font-semibold text-gray-900 mb-2">{feature.latestApproval.status}</p>
-            {feature.latestApproval.comments && (
-              <div>
-                <p className="text-sm text-gray-600">Comments</p>
-                <p className="text-gray-900 mt-1">{feature.latestApproval.comments}</p>
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Approval Workflow */}
+      {feature.status === 'DRAFT' && !feature.latestApproval && (
+        <ReviewerSelector
+          featureId={featureId}
+          onReviewRequested={() => {
+            refetch();
+          }}
+        />
+      )}
+
+      {feature.latestApproval && organization && (
+        <ApprovalStatus
+          featureId={featureId}
+          approval={feature.latestApproval}
+          organization={organization}
+          onApprovalChange={() => {
+            refetch();
+          }}
+        />
       )}
     </div>
   );

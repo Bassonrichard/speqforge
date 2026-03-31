@@ -74,12 +74,23 @@ export class SpecService {
     const branchName = `spec/${feature.project.projectKey}/${featureId
       .slice(-8)}-${featureSlug}${revNumber > 1 ? `-r${revNumber}` : ''}`;
 
-    // Build the prompt for LLM
+    // Fill in the KNOWN metadata placeholders first (before LLM call)
+    const now = new Date().toISOString().split('T')[0];
+    const partiallyFilledTemplate = templateService.fillTemplate(template.content, {
+      FEATURE_ID: featureId.slice(-8),
+      FEATURE_TITLE: featureTitle,
+      PROJECT_NAME: projectName,
+      CREATED_DATE: now,
+      STATUS: 'DRAFT',
+      FEATURE_DESCRIPTION: featureDescription,
+    });
+
+    // Build the prompt for LLM with the partially-filled template
     const prompt = this.buildGenerationPrompt(
       featureTitle,
       featureDescription,
       projectName,
-      template.content
+      partiallyFilledTemplate
     );
 
     // Call LLM to generate spec
@@ -89,22 +100,8 @@ export class SpecService {
       orgId
     );
 
-    // Fill in the template variables with generated content
-    const now = new Date().toISOString().split('T')[0];
-    const filledContent = templateService.fillTemplate(template.content, {
-      FEATURE_ID: featureId.slice(-8),
-      FEATURE_TITLE: featureTitle,
-      PROJECT_NAME: projectName,
-      CREATED_DATE: now,
-      STATUS: 'DRAFT',
-      FEATURE_DESCRIPTION: featureDescription,
-    });
-
-    // Merge generated content with template
-    const finalContent = this.mergeGeneratedContent(
-      filledContent,
-      generatedContent
-    );
+    // The LLM should return the complete spec with all sections filled
+    const finalContent = generatedContent;
 
     // Create SpecRevision in database
     const specRevision = await db.specRevision.create({
@@ -255,38 +252,68 @@ Be specific and thorough. Use the clarifying answers to resolve any ambiguities.
     projectName: string,
     templateContent: string
   ): string {
-    return `You are a business analyst helping to create a software specification. 
+    // Check if template has remaining placeholders
+    const hasPlaceholders = /\{\{[A-Z_0-9]+\}\}/.test(templateContent);
+
+    if (hasPlaceholders) {
+      // Template has placeholders - instruct LLM to fill them
+      return `You are a business analyst creating a software specification.
 
 Project: ${projectName}
 Feature: ${featureTitle}
+Description: ${featureDescription}
 
-Feature Description:
-${featureDescription}
+I have a specification template with placeholders marked as {{PLACEHOLDER_NAME}}. Your task is to:
+1. Replace ALL remaining placeholders with appropriate, detailed content
+2. Generate specific, realistic examples (not generic placeholders)
+3. Keep the template structure intact
+4. Write in clear, non-technical language for business stakeholders
 
-Please generate a comprehensive specification following this template structure:
+Template to complete:
 ${templateContent}
 
-Focus on:
+Instructions:
+- For user roles/personas, create realistic, specific personas relevant to this feature
+- For requirements (FR1, FR2, etc.), write detailed, testable requirements using MUST/SHOULD/MAY
+- For acceptance criteria, write specific Given-When-Then scenarios
+- For success metrics, include concrete, measurable numbers
+- For data requirements, specify actual fields and validation rules
+- Do NOT leave any {{PLACEHOLDER}} unfilled - replace each with real content
+
+Generate the complete specification now with all placeholders filled:`;
+    } else {
+      // Template is plain structure without placeholders
+      return `You are a business analyst creating a software specification.
+
+Project: ${projectName}
+Feature: ${featureTitle}
+Description: ${featureDescription}
+
+Generate a comprehensive specification following this template structure:
+${templateContent}
+
+Guidelines:
 1. Clear user scenarios with specific personas and problems they're solving
 2. Detailed, testable functional requirements (use "MUST", "SHOULD", "MAY")
-3. Measurable success criteria (include metrics where possible)
-4. Realistic assumptions and clearly defined constraints
+3. Measurable success criteria (include concrete metrics)
+4. Realistic assumptions and clearly defined constraints  
 5. Edge cases and error handling scenarios
 
 Write in clear, non-technical language suitable for business stakeholders. Avoid mentioning specific technologies, frameworks, or implementation details. Focus on WHAT needs to be built, not HOW.
 
 Generate the complete specification now:`;
+    }
   }
 
   /**
    * Merge generated content with template structure
+   * @deprecated - No longer used as LLM generates complete spec
    */
   private mergeGeneratedContent(
     template: string,
     generated: string
   ): string {
-    // For now, just return the generated content
-    // In a more sophisticated implementation, you'd parse both and merge intelligently
+    // LLM now generates the complete spec, so just return it
     return generated;
   }
 }

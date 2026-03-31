@@ -404,7 +404,7 @@ Break down SeqForge Portal implementation into parallel-able, independently test
 - [X] T148 [P] DELETE `/api/templates/[id]/route.ts` → delete template (admin-only, can't delete if active)
 - [ ] T149 Create template editor: show template preview before saving
 - [X] T150 Create template selector in feature creation flow: radio buttons / dropdown for available templates
-- [ ] T151 [P] Update spec-service to apply selected template during generation:
+- [X] T151 [P] Update spec-service to apply selected template during generation:
   - Load template content from SpecTemplate
   - Pass to LLM prompt: "Generate spec following this template: [...template placeholders...]"
 - [ ] T152 [P] Unit test template validation: check required sections present, reject invalid templates

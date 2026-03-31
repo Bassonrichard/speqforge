@@ -115,7 +115,8 @@ export class ApprovalService {
     specRevId: string,
     approverId: string,
     orgId: string,
-    threshold: ApprovalThreshold = 'SINGLE'
+    threshold: ApprovalThreshold = 'SINGLE',
+    comment?: string
   ): Promise<{ approved: boolean; message: string }> {
     // Get the approval record
     const approval = await db.specApproval.findFirst({
@@ -172,6 +173,7 @@ export class ApprovalService {
       data: {
         approvedBy: JSON.stringify(approvedBy),
         status: meetsThreshold ? 'APPROVED' : 'PENDING',
+        comments: comment || approval.comments,
       },
     });
 
