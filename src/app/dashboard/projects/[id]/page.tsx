@@ -17,31 +17,26 @@ interface ProjectDetailPageProps {
 
 export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const [showRepoForm, setShowRepoForm] = useState(false);
-  const { data, isLoading, error } = useProject(params instanceof Promise ? 'loading' : (params as any).id);
-  const detachRepo = useDetachRepository(
-    params instanceof Promise ? '' : (params as any).id,
-    {
-      onSuccess: () => setShowRepoForm(false),
-    }
-  );
 
   // Handle async params properly
   const [projectId, setProjectId] = useState<string>('');
-  const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
 
   useEffect(() => {
     if (params instanceof Promise) {
       params.then((p) => {
         setProjectId(p.id);
-        setResolvedParams(p);
       });
+    } else {
+      setProjectId((params as any).id);
     }
   }, [params]);
 
-  const actualProjectId = resolvedParams?.id || projectId;
-  const { data: project = null, isLoading: isProjectLoading } = useProject(actualProjectId);
+  const { data: project = null, isLoading } = useProject(projectId);
+  const detachRepo = useDetachRepository(projectId, {
+    onSuccess: () => setShowRepoForm(false),
+  });
 
-  if (isProjectLoading) {
+  if (!projectId || isLoading) {
     return (
       <div className="space-y-4">
         <div className="h-10 bg-gray-200 rounded animate-pulse" />
@@ -50,7 +45,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     );
   }
 
-  if (error || !project) {
+  if (!project) {
     return (
       <div className="rounded-md bg-red-50 p-4">
         <p className="text-sm font-medium text-red-800">Project not found</p>
@@ -95,7 +90,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
         {showRepoForm && (
           <div className="rounded-lg border border-gray-200 p-6 mb-6">
-            <RepoSelector projectId={actualProjectId} onSuccess={() => setShowRepoForm(false)} />
+            <RepoSelector projectId={projectId} onSuccess={() => setShowRepoForm(false)} />
           </div>
         )}
 
@@ -127,7 +122,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-900">Features</h2>
-          <Link href={`/features/new?projectId=${actualProjectId}`}>
+          <Link href={`/dashboard/features/new?projectId=${projectId}`}>
             <Button>New Feature</Button>
           </Link>
         </div>
@@ -156,7 +151,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                       {new Date(feature.createdAt).toLocaleDateString()}
                     </td>
                     <td className="border border-gray-300 px-4 py-3">
-                      <Link href={`/features/${feature.id}`}>
+                      <Link href={`/dashboard/features/${feature.id}`}>
                         <Button variant="outline" size="sm">
                           View
                         </Button>

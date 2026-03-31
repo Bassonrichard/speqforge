@@ -86,7 +86,7 @@ export default function ProjectsPage() {
                   </td>
                   <td className="border border-gray-300 px-4 py-3">
                     <div className="flex gap-2">
-                      <Link href={`/projects/${project.id}`}>
+                      <Link href={`/dashboard/projects/${project.id}`}>
                         <Button variant="outline" size="sm">
                           View
                         </Button>
