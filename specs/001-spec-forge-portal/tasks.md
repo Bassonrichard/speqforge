@@ -141,30 +141,30 @@ Break down SeqForge Portal implementation into parallel-able, independently test
 
 ### Implementation (T048-T064)
 
-- [ ] T048 Create spec template management service `src/services/template-service.ts`:
+- [X] T048 Create spec template management service `src/services/template-service.ts`:
   - `getActiveTemplate(orgId)` → fetch default/active template from SpecTemplate table
   - `getTemplates(orgId)` → list all templates for org
   - `createTemplate(orgId, name, content)` → validate, save to DB
-- [ ] T049 [P] Implement LLM spec generation service `src/services/spec-service.ts`:
+- [X] T049 [P] Implement LLM spec generation service `src/services/spec-service.ts`:
   - `generateSpec(featureDescription, templateId, orgId)` → call llm-gateway with prompt: "Based on this description and template, generate a complete spec with [User Scenarios, FR, SC, Assumptions]"
   - Return structured spec content (string)
   - Save SpecRevision to DB with status=DRAFT
-- [ ] T050 [P] Create spec generation API route `src/app/api/features/[id]/generate/route.ts` → POST trigger spec generation, return SpecRevision with content
-- [ ] T051 [P] Implement template upload API route `src/app/api/templates/route.ts` (org admin only):
+- [X] T050 [P] Create spec generation API route `src/app/api/features/[id]/generate/route.ts` → POST trigger spec generation, return SpecRevision with content
+- [X] T051 [P] Implement template upload API route `src/app/api/templates/route.ts` (org admin only):
   - POST → upload Markdown template file, validate placeholders, save to DB
   - GET → list templates for org
-- [ ] T052 Implement default spec template at `src/lib/DEFAULT_SPEC_TEMPLATE.md` (Requirements + Design + Tasks structure per Spec Kit/Kiro)
-- [ ] T053 [P] Create spec editor component `src/components/spec-editor/spec-editor.tsx`:
+- [X] T052 Implement default spec template at `src/lib/DEFAULT_SPEC_TEMPLATE.md` (Requirements + Design + Tasks structure per Spec Kit/Kiro)
+- [X] T053 [P] Create spec editor component `src/components/spec-editor/spec-editor.tsx`:
   - Display markdown preview (left) + editor (right) using react-markdown + remark
   - Allow inline edits (optional for MVP)
   - Show status changes
-- [ ] T054 [P] Create template selector component `src/components/spec-editor/template-selector.tsx` with radio buttons for available templates
-- [ ] T055 [P] Add spec editor to feature detail page `src/app/(dashboard)/features/[id]/page.tsx`:
+- [X] T054 [P] Create template selector component `src/components/spec-editor/template-selector.tsx` with radio buttons for available templates
+- [X] T055 [P] Add spec editor to feature detail page `src/app/(dashboard)/features/[id]/page.tsx`:
   - Show "Generate Spec" button if no SpecRevision exists
   - Show generated spec in editor once SpecRevision created
   - Show "Next" button to proceed to clarifying questions (US3)
-- [ ] T056 [P] Create LLM error UI component `src/components/spec-editor/llm-error.tsx` with user-friendly message (rate limit, quota, auth issue)
-- [ ] T057 Create TanStack Query hook `src/hooks/use-spec-revision.ts` → GET SpecRevision by ID, cache
+- [X] T056 [P] Create LLM error UI component `src/components/spec-editor/llm-error.tsx` with user-friendly message (rate limit, quota, auth issue)
+- [X] T057 Create TanStack Query hook `src/hooks/use-spec-revision.ts` → GET SpecRevision by ID, cache
 - [ ] T058 [P] Unit test `src/services/spec-service.ts`:
   - Mock llm-gateway, test generateSpec() returns valid SpecRevision
   - Test template placeholder substitution
@@ -174,8 +174,8 @@ Break down SeqForge Portal implementation into parallel-able, independently test
 - [ ] T060 [P] Unit test template validation in `src/lib/validation.ts` → required sections detected
 - [ ] T061 [P] E2E test: create feature → click "Generate Spec" → wait for response → verify spec editor shows structured content
 - [ ] T062 [P] Performance test: measure spec generation latency, target <5 min with typical LLM provider
-- [ ] T063 Create `src/services/audit-service.ts` utility to log all actions: `logAction(orgId, userId, action, resourceType, resourceId, details)`
-- [ ] T064 [P] Add fallback template if custom template missing: use DEFAULT_SPEC_TEMPLATE
+- [X] T063 Create `src/services/audit-service.ts` utility to log all actions: `logAction(orgId, userId, action, resourceType, resourceId, details)`
+- [X] T064 [P] Add fallback template if custom template missing: use DEFAULT_SPEC_TEMPLATE
 
 ---
 
@@ -187,22 +187,22 @@ Break down SeqForge Portal implementation into parallel-able, independently test
 
 ### Implementation (T065-T084)
 
-- [ ] T065 Implement clarifying question generation in `src/services/spec-service.ts`:
+- [X] T065 Implement clarifying question generation in `src/services/spec-service.ts`:
   - `identifyClarifyingQuestions(spec, orgId)` → call LLM with prompt: "Given this spec, identify 3 key ambiguities or critical decisions that need clarification"
   - Return array of {question: string, options?: [string], type: "radio" | "checkbox" | "text"}
 - [ ] T066 [P] Store clarifying questions in memory or temp table (avoid DB for MVP, recompute on demand)
-- [ ] T067 [P] Create clarifying question API route `src/app/api/features/[id]/clarify/route.ts`:
+- [X] T067 [P] Create clarifying question API route `src/app/api/features/[id]/clarify/route.ts`:
   - POST → return questions for spec
   - POST `/answer` → save answers as ClarifyingAnswer records, regenerate spec with answers
-- [ ] T068 Implement spec regeneration in `src/services/spec-service.ts`:
+- [X] T068 Implement spec regeneration in `src/services/spec-service.ts`:
   - `regenerateWithAnswers(specRevId, answers: {[questionNum]: answer})` → call LLM with original spec + answers → update spec content
   - Bump SpecRevision.revNumber if approved, keep as DRAFT until approved
-- [ ] T069 [P] Create clarifying questions UI component `src/components/spec-editor/clarifying-questions.tsx`:
+- [X] T069 [P] Create clarifying questions UI component `src/components/spec-editor/clarifying-questions.tsx`:
   - Display one question at a time (or grouped)
   - Radio buttons / checkboxes / text input based on question type
   - Show "Previous" / "Next" navigation
   - Show "Skip" optional button
-- [ ] T070 [P] Create diff view component `src/components/spec-editor/spec-diff.tsx`:
+- [X] T070 [P] Create diff view component `src/components/spec-editor/spec-diff.tsx`:
   - Compare original spec vs updated spec
   - Highlight changes (added/removed/modified sections)
 - [ ] T071 Create spec-editor flow state machine in UI:
@@ -234,30 +234,30 @@ Break down SeqForge Portal implementation into parallel-able, independently test
 
 ### Implementation (T085-T108)
 
-- [ ] T085 Implement multi-repo sync service `src/services/sync-service.ts`:
+- [X] T085 Implement multi-repo sync service `src/services/sync-service.ts`:
   - `syncToRepos(specRevId, projectId)` → iterate RepoAttachments, attempt branch creation in each
   - For each repo: try creating branch, writing files, opening PR
   - Collect results: {repoId, status, branch, prUrl, error}
   - Return summary: {succeeded: [], failed: [{repoId, error}]}
-- [ ] T086 [P] Implement branch naming logic: apply branchPattern from Project to generate unique branch names
+- [X] T086 [P] Implement branch naming logic: apply branchPattern from Project to generate unique branch names
   - Pattern example: `spec/{projectKey}/{featureId}-{slug}` → `spec/PRJ/123-add-login`
-- [ ] T087 [P] Create spec files from SpecRevision:
+- [X] T087 [P] Create spec files from SpecRevision:
   - `requirements.md` (User Scenarios + FR from spec)
   - `design.md` (if available from spec)
   - `tasks.md` (if available from spec)
   - All files saved to `specs/feature-{ID}/` path in branch
-- [ ] T088 Implement spec commit service in `src/services/sync-service.ts`:
+- [X] T088 Implement spec commit service in `src/services/sync-service.ts`:
   - `commitSpecFiles(token, owner, repo, branch, specId, specContent)` → create files in branch, commit with message linking to portal
-- [ ] T089 [P] Implement PR creation logic: after files committed, create PR with:
+- [X] T089 [P] Implement PR creation logic: after files committed, create PR with:
   - Title: "Spec: [Feature Name]"
   - Body: Link to portal feature + summary of spec
   - Label (optional): "spec" or "spec-forge"
-- [ ] T090 Implement handoff API route `src/app/api/features/[id]/handoff/route.ts`:
+- [X] T090 Implement handoff API route `src/app/api/features/[id]/handoff/route.ts`:
   - POST → trigger sync to all repos
   - Return sync result: {succeeded: [], failed: []}
   - Update Feature.status → HANDED_OFF
   - Create RepoSyncRecord entries for each repo
-- [ ] T091 [P] Create sync result UI component `src/components/github-status/sync-result.tsx`:
+- [X] T091 [P] Create sync result UI component `src/components/github-status/sync-result.tsx`:
   - Show table: Repo | Branch | PR URL | Status (✅ / ❌)
   - For failed repos, show error message (e.g., "Branch already exists", "Permission denied")
   - Link to branches/PRs in GitHub
@@ -296,15 +296,15 @@ Break down SeqForge Portal implementation into parallel-able, independently test
 
 ### Implementation (T109-T128)
 
-- [ ] T109 Implement GitHub webhook handler `src/app/api/github/webhook/route.ts`:
+- [X] T109 Implement GitHub webhook handler `src/app/api/github/webhook/route.ts`:
   - Verify webhook signature (HMAC-SHA256)
   - Parse payload (event: pull_request, action: opened | closed | edited)
   - Route to appropriate handler
-- [ ] T110 [P] Implement PR opened handler in `src/services/webhook-service.ts`:
+- [X] T110 [P] Implement PR opened handler in `src/services/webhook-service.ts`:
   - Find Feature by branch name (match spec/{projectKey}/{featureId}-*)
   - Set Feature.status = IN_PROGRESS
   - Create WebhookEvent log entry
-- [ ] T111 [P] Implement PR merged handler:
+- [X] T111 [P] Implement PR merged handler:
   - Find Feature by branch name
   - Set Feature.status = COMPLETE (after all repos merged? or first?)
   - Record merge commit SHA

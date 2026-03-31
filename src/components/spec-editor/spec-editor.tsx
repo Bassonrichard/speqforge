@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ClarifyingQuestions } from '@/components/spec-editor/clarifying-questions';
 import { SyncResultDisplay } from '@/components/github-status/sync-result';
+import { TemplateSelector } from '@/components/spec-editor/template-selector';
+import { LLMError } from '@/components/spec-editor/llm-error';
 
 interface SpecRevision {
   id: string;
@@ -132,32 +134,12 @@ export function SpecEditor({ featureId }: SpecEditorProps) {
         </div>
 
         {templatesData && templatesData.length > 0 && (
-          <div className="space-y-3">
-            <label className="text-sm font-medium">Select Template</label>
-            <div className="space-y-2">
-              {templatesData.map((template) => (
-                <label
-                  key={template.id}
-                  className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-accent"
-                >
-                  <input
-                    type="radio"
-                    name="template"
-                    value={template.id}
-                    checked={selectedTemplate === template.id}
-                    onChange={(e) => setSelectedTemplate(e.target.value)}
-                    className="h-4 w-4"
-                  />
-                  <div>
-                    <div className="font-medium">{template.name}</div>
-                    {template.isDefault && (
-                      <span className="text-xs text-muted-foreground">(Default)</span>
-                    )}
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
+          <TemplateSelector
+            templates={templatesData}
+            selectedTemplateId={selectedTemplate}
+            onSelect={setSelectedTemplate}
+            disabled={isGenerating || generateMutation.isPending}
+          />
         )}
 
         <Button
@@ -171,11 +153,14 @@ export function SpecEditor({ featureId }: SpecEditorProps) {
         </Button>
 
         {generateMutation.isError && (
-          <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
-            <p className="text-sm text-destructive">
-              {generateMutation.error.message}
-            </p>
-          </div>
+          <LLMError
+            error={generateMutation.error}
+            onRetry={() => {
+              generateMutation.reset();
+              handleGenerateSpec();
+            }}
+            onDismiss={() => generateMutation.reset()}
+          />
         )}
       </div>
     );

@@ -190,6 +190,35 @@ tests/
   ```
 - Apply migrations in production via CI/CD or deployment hooks.
 - Use Prisma client as a singleton in `src/lib/db.ts`.
+- **Bun + SQLite**: Use `@prisma/adapter-libsql` for SQLite support (Bun doesn't support better-sqlite3's native driver).
+
+### Prisma Best Practices
+
+**JSON Fields:**
+- Always use `JSON.stringify()` when writing to JSON/Json fields
+- Use `undefined` (not `null`) for optional JSON fields to avoid Prisma type errors
+- Example: `details: entry.details ? JSON.stringify(entry.details) : undefined`
+
+**Relations & Includes:**
+- Only include relations that exist in your Prisma schema (check `prisma/schema.prisma`)
+- Use `include` for related data, `select` to limit fields
+- Validate relation names match schema exactly before using in queries
+
+**Type Safety:**
+- Import types from `@prisma/client` for function parameters
+- Use Prisma's generated types (e.g., `SpecRevision`, `Feature`) for consistency
+- Leverage TypeScript's type checking to catch schema mismatches early
+
+**Error Handling:**
+- Wrap all DB operations in try-catch blocks
+- Log errors but don't expose internal DB details to clients
+- For audit logging, continue execution even if audit write fails
+
+**Query Patterns:**
+- Use `findUnique` with unique constraints (id, unique indexes)
+- Use `findFirst` when you need one result but don't have a unique constraint
+- Use `findMany` with `take` and `skip` for pagination
+- Use `include` sparingly—only load relations you actually need
 
 ---
 
