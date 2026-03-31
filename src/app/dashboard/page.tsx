@@ -6,6 +6,8 @@ import { Loader2, Plus, AlertCircle, ArrowRight, GitBranch, Workflow, CheckCircl
 import { Button } from '@/components/ui/button';
 import { useModal } from '@/store/ui-store';
 import Link from 'next/link';
+import React from 'react';
+import { CreateOrganizationForm } from '@/components/organization/create-organization-form';
 
 /**
  * Dashboard Home Page - Retro Computing Workflow Style
@@ -13,9 +15,17 @@ import Link from 'next/link';
  */
 export default function DashboardPage() {
   const { data: user, isLoading: userLoading, error: userError } = useAuth();
-  const { data: orgs, isLoading: orgsLoading, error: orgsError} = useOrganizations();
+  const { data: orgs, isLoading: orgsLoading, error: orgsError, refetch: refetchOrgs } = useOrganizations();
   const createProjectModal = useModal('create-project');
   const queryClient = useQueryClient();
+  const [showCreateOrg, setShowCreateOrg] = React.useState(false);
+
+  const handleOrgCreated = (orgId: string) => {
+    setShowCreateOrg(false);
+    refetchOrgs();
+    // Redirect to the new org's projects page
+    window.location.href = `/dashboard/projects?org=${orgId}`;
+  };
 
   if (userLoading) {
     return (
@@ -221,7 +231,7 @@ export default function DashboardPage() {
       )}
 
       {/* Empty State - Workflow Style */}
-      {!hasOrganizations && !isLoadingOrgs && (
+      {!hasOrganizations && !isLoadingOrgs && !showCreateOrg && (
         <div className="stagger-item border-2 border-dashed border-[#E0DCD4] bg-gradient-to-br from-white to-[#FFF8F0] p-16 text-center relative overflow-hidden rounded-2xl">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 border-2 border-dashed border-orange-100 rounded-full opacity-40"></div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 border border-orange-50 rounded-full opacity-30"></div>
@@ -234,11 +244,11 @@ export default function DashboardPage() {
                 NO ORGANIZATIONS YET
               </h3>
               <p className="text-[#6B6B6B] leading-relaxed">
-                Contact your administrator to be added to an organization, or create a new one to get started.
+                Create your first organization to start managing projects and specifications with your team.
               </p>
             </div>
             <Button 
-              onClick={() => alert('Organization creation coming soon! For now, an organization is automatically created when you sign in.')}
+              onClick={() => setShowCreateOrg(true)}
               className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] hover:from-[#E55A2B] hover:to-[#E77A34] text-white px-8 py-6 text-sm font-semibold group transition-all duration-300 shadow-lg hover:shadow-xl rounded-xl border-none"
               style={{ fontFamily: 'var(--font-ibm-plex-mono)' }}
             >
@@ -246,6 +256,16 @@ export default function DashboardPage() {
               CREATE ORGANIZATION
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Create Organization Form */}
+      {showCreateOrg && (
+        <div className="stagger-item border border-[#E0DCD4] bg-white p-8 rounded-xl shadow-lg max-w-2xl mx-auto">
+          <CreateOrganizationForm
+            onSuccess={handleOrgCreated}
+            onCancel={() => setShowCreateOrg(false)}
+          />
         </div>
       )}
     </div>

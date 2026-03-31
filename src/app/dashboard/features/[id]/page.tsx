@@ -15,7 +15,6 @@ import { StatusBadge, type FeatureStatus } from '@/components/ui/status-badge';
 import { StatusTimeline } from '@/components/ui/status-timeline';
 import { ReviewerSelector } from '@/components/feature-approval/reviewer-selector';
 import { ApprovalStatus } from '@/components/feature-approval/approval-status';
-import { useAuthStore } from '@/store/auth-store';
 
 interface FeatureDetailPageProps {
   params: Promise<{ id: string }>;
@@ -23,7 +22,7 @@ interface FeatureDetailPageProps {
 
 export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
   const [featureId, setFeatureId] = React.useState<string>('');
-  const { session } = useAuthStore();
+  const [orgId, setOrgId] = React.useState<string | null>(null);
   const [organization, setOrganization] = React.useState<{
     approvalThreshold: 'SINGLE' | 'UNANIMOUS' | 'MAJORITY';
   } | null>(null);
@@ -37,26 +36,34 @@ export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
   const { data: feature, isLoading, error, refetch } = useFeature(featureId);
   const { data: history, isLoading: historyLoading } = useFeatureHistory(featureId);
 
-  // Load organization data for approval threshold
+  // Load session and organization data
   React.useEffect(() => {
-    if (!session?.organizationId) return;
-
-    const loadOrg = async () => {
+    const loadSession = async () => {
       try {
-        const response = await fetch(`/api/auth/organizations/${session.organizationId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setOrganization({
-            approvalThreshold: data.organization.approvalThreshold,
-          });
+        const sessionResponse = await fetch('/api/auth/user');
+        if (!sessionResponse.ok) return;
+        
+        const sessionData = await sessionResponse.json();
+        const currentOrgId = sessionData.orgId || sessionData.data?.orgId;
+        setOrgId(currentOrgId);
+
+        if (currentOrgId) {
+          const orgResponse = await fetch(`/api/auth/organizations/${currentOrgId}`);
+          if (orgResponse.ok) {
+            const result = await orgResponse.json();
+            const data = result.data || result;
+            setOrganization({
+              approvalThreshold: data.organization.approvalThreshold,
+            });
+          }
         }
       } catch (err) {
-        console.error('Failed to load organization data:', err);
+        console.error('Failed to load session/org data:', err);
       }
     };
 
-    loadOrg();
-  }, [session?.organizationId]);
+    loadSession();
+  }, []);
 
   const handleStatusTransition = async (newStatus: FeatureStatus) => {
     if (!featureId) return;

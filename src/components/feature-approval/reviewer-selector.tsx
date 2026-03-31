@@ -7,7 +7,6 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/store/auth-store';
 
 interface User {
   id: string;
@@ -22,22 +21,32 @@ interface ReviewerSelectorProps {
 }
 
 export function ReviewerSelector({ featureId, onReviewRequested }: ReviewerSelectorProps) {
-  const { session } = useAuthStore();
+  const [orgId, setOrgId] = React.useState<string | null>(null);
   const [orgMembers, setOrgMembers] = React.useState<User[]>([]);
   const [selectedReviewers, setSelectedReviewers] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Load org members with APPROVER/REVIEWER roles
+  // Load session and org members
   React.useEffect(() => {
-    if (!session?.organizationId) return;
-
-    const loadMembers = async () => {
+    const loadData = async () => {
       try {
-        const response = await fetch(`/api/auth/organizations/${session.organizationId}/members`);
+        // Get current session
+        const sessionResponse = await fetch('/api/auth/user');
+        if (!sessionResponse.ok) return;
+        
+        const sessionData = await sessionResponse.json();
+        const currentOrgId = sessionData.orgId || sessionData.data?.orgId;
+        setOrgId(currentOrgId);
+
+        if (!currentOrgId) return;
+
+        // Load org members
+        const response = await fetch(`/api/auth/organizations/${currentOrgId}/members`);
         if (!response.ok) throw new Error('Failed to load org members');
         
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result;
         // Filter to only approver/reviewer roles
         const reviewerUsers = (data.members || []).filter(
           (m: User) => m.orgRole === 'approver' || m.orgRole === 'reviewer'
@@ -49,8 +58,8 @@ export function ReviewerSelector({ featureId, onReviewRequested }: ReviewerSelec
       }
     };
 
-    loadMembers();
-  }, [session?.organizationId]);
+    loadData();
+  }, []);
 
   const handleToggleReviewer = (userId: string) => {
     setSelectedReviewers((prev) =>

@@ -5,8 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { verifySession } from '@/lib/auth';
-import { apiResponse } from '@/lib/api-middleware';
+import { getSession } from '@/lib/auth';
 
 interface RouteContext {
   params: Promise<{ orgId: string }>;
@@ -18,43 +17,57 @@ export async function GET(
 ): Promise<NextResponse> {
   try {
     // Verify session
-    const session = await verifySession(request);
+    const session = await getSession();
     if (!session) {
-      return apiResponse(401, { code: 'UNAUTHORIZED', message: 'Not authenticated' });
+      return NextResponse.json(
+        { success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
+        { status: 401 }
+      );
     }
 
     const { orgId } = await context.params;
 
     // Verify user belongs to this org
-    if (session.organizationId !== orgId) {
-      return apiResponse(403, {
-        code: 'FORBIDDEN',
-        message: 'You do not have access to this organization',
-      });
+    if (session.orgId !== orgId) {
+      return NextResponse.json(
+        { success: false, error: { code: 'FORBIDDEN', message: 'You do not have access to this organization' } },
+        { status: 403 }
+      );
     }
 
-    // Fetch all members of the organization
-    const members = await db.user.findMany({
+    // Fetch all members of the organization via OrgMember join table
+    const orgMembers = await db.orgMember.findMany({
       where: {
-        organizationId: orgId,
+        orgId: orgId,
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        orgRole: true,
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+          },
+        },
       },
       orderBy: {
-        name: 'asc',
+        joinedAt: 'asc',
       },
     });
 
-    return apiResponse(200, { members });
+    // Transform to include role with user data
+    const members = orgMembers.map((om) => ({
+      id: om.user.id,
+      name: om.user.username, // Use username as name
+      email: om.user.email,
+      orgRole: om.role.toLowerCase() as 'owner' | 'admin' | 'member' | 'approver' | 'reviewer',
+    }));
+
+    return NextResponse.json({ success: true, data: { members } });
   } catch (error) {
     console.error('Error fetching organization members:', error);
-    return apiResponse(500, {
-      code: 'INTERNAL_ERROR',
-      message: 'Failed to fetch organization members',
-    });
+    return NextResponse.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch organization members' } },
+      { status: 500 }
+    );
   }
 }

@@ -7,8 +7,6 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/store/auth-store';
-import { format } from 'date-fns';
 
 interface Reviewer {
   id: string;
@@ -18,15 +16,13 @@ interface Reviewer {
 
 interface ApprovalData {
   id: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'IN_REVIEW';
   requestedBy: string;
-  requestedAt: string;
-  reviewers: string[]; // JSON array of user IDs
-  approvedBy: string[]; // JSON array of user IDs
-  rejectedBy?: string | null;
-  rejectedAt?: string | null;
-  rejectionReason?: string | null;
-  comments?: string | null;
+  createdAt: string;
+  assignedTo: string | null; // JSON array of user IDs
+  approvedBy: string | null; // JSON array of user IDs
+  rejectedBy: string | null;
+  comments: string | null;
 }
 
 interface Organization {
@@ -46,27 +42,47 @@ export function ApprovalStatus({
   organization,
   onApprovalChange 
 }: ApprovalStatusProps) {
-  const { session } = useAuthStore();
+  const [currentUserId, setCurrentUserId] = React.useState<string |null>(null);
+  const [orgId, setOrgId] = React.useState<string | null>(null);
   const [reviewerDetails, setReviewerDetails] = React.useState<Record<string, Reviewer>>({});
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [comment, setComment] = React.useState('');
   const [rejectionReason, setRejectionReason] = React.useState('');
 
+  // Load session data
+  React.useEffect(() => {
+    const loadSession = async () => {
+      try {
+        const sessionResponse = await fetch('/api/auth/user');
+        if (!sessionResponse.ok) return;
+        
+        const sessionData = await sessionResponse.json();
+        setCurrentUserId(sessionData.userId || sessionData.data?.userId);
+        setOrgId(sessionData.orgId || sessionData.data?.orgId);
+      } catch (err) {
+        console.error('Failed to load session:', err);
+      }
+    };
+
+    loadSession();
+  }, []);
+
   // Load reviewer details
   React.useEffect(() => {
-    if (!approval || !session?.organizationId) return;
+    if (!approval || !orgId) return;
 
-    const reviewers = JSON.parse(approval.reviewers) as string[];
-    const approvedBy = JSON.parse(approval.approvedBy) as string[];
+    const reviewers = approval.assignedTo ? (JSON.parse(approval.assignedTo) as string[]) : [];
+    const approvedBy = approval.approvedBy ? (JSON.parse(approval.approvedBy) as string[]) : [];
     const allUserIds = Array.from(new Set([...reviewers, ...approvedBy]));
 
     const loadReviewers = async () => {
       try {
-        const response = await fetch(`/api/auth/organizations/${session.organizationId}/members`);
+        const response = await fetch(`/api/auth/organizations/${orgId}/members`);
         if (!response.ok) throw new Error('Failed to load members');
         
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result;
         const details: Record<string, Reviewer> = {};
         
         allUserIds.forEach((userId) => {
@@ -83,7 +99,7 @@ export function ApprovalStatus({
     };
 
     loadReviewers();
-  }, [approval, session?.organizationId]);
+  }, [approval, orgId]);
 
   const handleApprove = async () => {
     if (!approval) return;
@@ -157,10 +173,10 @@ export function ApprovalStatus({
     );
   }
 
-  const reviewers = JSON.parse(approval.reviewers) as string[];
-  const approvedBy = JSON.parse(approval.approvedBy) as string[];
-  const isAssignedReviewer = reviewers.includes(session?.userId || '');
-  const hasApproved = approvedBy.includes(session?.userId || '');
+  const reviewers = approval.assignedTo ? (JSON.parse(approval.assignedTo) as string[]) : [];
+  const approvedBy = approval.approvedBy ? (JSON.parse(approval.approvedBy) as string[]) : [];
+  const isAssignedReviewer = reviewers.includes(currentUserId || '');
+  const hasApproved = approvedBy.includes(currentUserId || '');
 
   // Calculate approval progress
   const progressPercent = reviewers.length > 0
@@ -263,15 +279,13 @@ export function ApprovalStatus({
       )}
 
       {/* Rejection Details */}
-      {approval.status === 'REJECTED' && approval.rejectionReason && (
+      {approval.status === 'REJECTED' && approval.comments && (
         <div className="mb-4 p-3 bg-red-50 rounded border border-red-200">
           <p className="text-sm font-medium text-red-900 mb-1">Rejection Reason</p>
-          <p className="text-sm text-red-700">{approval.rejectionReason}</p>
-          {approval.rejectedAt && (
-            <p className="text-xs text-red-600 mt-2">
-              Rejected on {format(new Date(approval.rejectedAt), 'PPP')}
-            </p>
-          )}
+          <p className="text-sm text-red-700">{approval.comments}</p>
+          <p className="text-xs text-red-600 mt-2">
+            Rejected by: {reviewerDetails[approval.rejectedBy || '']?.name || 'Unknown'}
+          </p>
         </div>
       )}
 

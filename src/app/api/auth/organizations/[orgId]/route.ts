@@ -5,8 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { verifySession } from '@/lib/auth';
-import { apiResponse } from '@/lib/api-middleware';
+import { getSession } from '@/lib/auth';
 
 interface RouteContext {
   params: Promise<{ orgId: string }>;
@@ -18,19 +17,22 @@ export async function GET(
 ): Promise<NextResponse> {
   try {
     // Verify session
-    const session = await verifySession(request);
+    const session = await getSession();
     if (!session) {
-      return apiResponse(401, { code: 'UNAUTHORIZED', message: 'Not authenticated' });
+      return NextResponse.json(
+        { success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
+        { status: 401 }
+      );
     }
 
     const { orgId } = await context.params;
 
     // Verify user belongs to this org
-    if (session.organizationId !== orgId) {
-      return apiResponse(403, {
-        code: 'FORBIDDEN',
-        message: 'You do not have access to this organization',
-      });
+    if (session.orgId !== orgId) {
+      return NextResponse.json(
+        { success: false, error: { code: 'FORBIDDEN', message: 'You do not have access to this organization' } },
+        { status: 403 }
+      );
     }
 
     // Fetch organization details
@@ -39,25 +41,24 @@ export async function GET(
       select: {
         id: true,
         name: true,
-        gitHubOrgName: true,
         approvalThreshold: true,
         createdAt: true,
       },
     });
 
     if (!organization) {
-      return apiResponse(404, {
-        code: 'NOT_FOUND',
-        message: 'Organization not found',
-      });
+      return NextResponse.json(
+        { success: false, error: { code: 'NOT_FOUND', message: 'Organization not found' } },
+        { status: 404 }
+      );
     }
 
-    return apiResponse(200, { organization });
+    return NextResponse.json({ success: true, data: { organization } });
   } catch (error) {
     console.error('Error fetching organization:', error);
-    return apiResponse(500, {
-      code: 'INTERNAL_ERROR',
-      message: 'Failed to fetch organization',
-    });
+    return NextResponse.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch organization' } },
+      { status: 500 }
+    );
   }
 }

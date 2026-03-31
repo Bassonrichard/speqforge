@@ -423,23 +423,23 @@ Break down SeqForge Portal implementation into parallel-able, independently test
 
 ### Implementation (T157-T179)
 
-- [ ] T157 Create approval workflow UI in feature detail: "Request Review" button → opens dialog to select reviewers
-- [ ] T158 [P] Implement approver selection UI component `src/components/approval-flow/reviewer-selector.tsx`:
+- [X] T157 Create approval workflow UI in feature detail: "Request Review" button → opens dialog to select reviewers
+- [X] T158 [P] Implement approver selection UI component `src/components/approval-flow/reviewer-selector.tsx`:
   - List org members with APPROVER/REVIEWER roles
   - Checkboxes to select multiple reviewers
   - "Request Review" button → POST /api/features/[id]/approve
-- [ ] T159 Implement spec approval API route `src/app/api/features/[id]/approve/route.ts`:
+- [X] T159 Implement spec approval API route `src/app/api/features/[id]/approve/route.ts`:
   - POST /request-review → create SpecApproval record, set status=IN_REVIEW, assign reviewers
   - POST /approve → called by approver, add to approvedBy list, check threshold
   - POST /reject → called by reviewer, set status=REJECTED, save rejection reason
-- [ ] T160 [P] Implement approval threshold logic in `src/services/approval-service.ts`:
+- [X] T160 [P] Implement approval threshold logic in `src/services/approval-service.ts`:
   - Get org.approvalThreshold (SINGLE | UNANIMOUS | MAJORITY)
   - Check if approval condition is met:
     - SINGLE: if any APPROVER approved → APPROVED
     - UNANIMOUS: if ALL reviewers approved → APPROVED
     - MAJORITY: if >50% approved → APPROVED
   - Auto-transition Feature.status once condition met
-- [ ] T161 [P] Create approval status UI component `src/components/approval-flow/approval-status.tsx`:
+- [X] T161 [P] Create approval status UI component `src/components/approval-flow/approval-status.tsx`:
   - Show assigned reviewers
   - Show who has approved (with checkmarks)
   - Show approval/rejection buttons (only if assigned to current user)
