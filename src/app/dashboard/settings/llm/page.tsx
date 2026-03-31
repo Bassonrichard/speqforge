@@ -63,38 +63,7 @@ export default function LLMSettingsPage() {
     enabled: isAdmin, // Only fetch if admin
   });
 
-  // Show loading state
-  if (isLoadingSession) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
-  }
-
-  // Show access denied if not admin
-  if (!isAdmin) {
-    return (
-      <div className="max-w-4xl mx-auto p-8">
-        <div className="border border-red-200 rounded-lg p-6 bg-red-50">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h2 className="text-lg font-semibold text-red-900 mb-2">
-                Access Denied
-              </h2>
-              <p className="text-red-700">
-                You must be an organization owner or admin to configure LLM API keys.
-                Please contact your organization administrator for access.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Save key mutation
+  // Save key mutation - MUST be called before any conditional returns
   const saveMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch('/api/llm/keys', {
@@ -139,6 +108,37 @@ export default function LLMSettingsPage() {
   ];
 
   const selectedProviderInfo = providers.find((p) => p.value === selectedProvider);
+
+  // Show loading state (after all hooks)
+  if (isLoadingSession) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  // Show access denied if not admin (after all hooks)
+  if (!isAdmin) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <div className="border border-red-200 rounded-lg p-6 bg-red-50">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h2 className="text-lg font-semibold text-red-900 mb-2">
+                Access Denied
+              </h2>
+              <p className="text-red-700">
+                You must be an organization owner or admin to configure LLM API keys.
+                Please contact your organization administrator for access.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-8">

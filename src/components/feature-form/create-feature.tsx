@@ -59,7 +59,7 @@ export function CreateFeatureForm({ projectId: initialProjectId, onSuccess }: Cr
       setDescription('');
       setTemplateId('');
       onSuccess?.();
-      router.push(`/features/${(data as { id: string }).id}`);
+      router.push(`/dashboard/features/${(data as { id: string }).id}`);
     },
   });
 

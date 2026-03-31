@@ -29,7 +29,7 @@ export function CreateProjectForm({ onSuccess }: CreateProjectFormProps) {
       setProjectKey('');
       setBranchPattern('spec/{projectKey}/{featureId}-{slug}');
       onSuccess?.();
-      router.push('/projects');
+      router.push('/dashboard/projects');
     },
   });
 

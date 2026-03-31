@@ -21,7 +21,7 @@ export default function NewProjectPage() {
       </div>
 
       <div className="mt-8">
-        <Link href="/projects">
+        <Link href="/dashboard/projects">
           <Button variant="outline">Back to Projects</Button>
         </Link>
       </div>

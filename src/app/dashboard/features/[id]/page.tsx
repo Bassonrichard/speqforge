@@ -117,7 +117,7 @@ export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
             <h1 className="text-3xl font-bold text-gray-900">{feature.title}</h1>
             <p className="mt-2 text-gray-600">{feature.description}</p>
           </div>
-          <Link href="/features">
+          <Link href="/dashboard/features">
             <Button variant="outline">Back</Button>
           </Link>
         </div>

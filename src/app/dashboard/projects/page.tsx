@@ -37,7 +37,7 @@ export default function ProjectsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
           <p className="mt-1 text-gray-600">Manage your projects and link repositories</p>
         </div>
-        <Link href="/projects/new">
+        <Link href="/dashboard/projects/new">
           <Button>New Project</Button>
         </Link>
       </div>
@@ -46,7 +46,7 @@ export default function ProjectsPage() {
         <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
           <h3 className="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
           <p className="text-gray-600 mb-6">Create your first project to get started</p>
-          <Link href="/projects/new">
+          <Link href="/dashboard/projects/new">
             <Button>Create Project</Button>
           </Link>
         </div>

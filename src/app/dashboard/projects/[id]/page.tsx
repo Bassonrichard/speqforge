@@ -67,7 +67,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
             <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
             {project.description && <p className="mt-1 text-gray-600">{project.description}</p>}
           </div>
-          <Link href="/projects">
+          <Link href="/dashboard/projects">
             <Button variant="outline">Back to Projects</Button>
           </Link>
         </div>

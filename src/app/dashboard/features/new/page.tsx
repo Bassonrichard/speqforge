@@ -25,7 +25,7 @@ export default function NewFeaturePage() {
       </div>
 
       <div className="mt-8">
-        <Link href="/features">
+        <Link href="/dashboard/features">
           <Button variant="outline">Back to Features</Button>
         </Link>
       </div>
