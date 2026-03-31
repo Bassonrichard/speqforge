@@ -402,3 +402,57 @@ export class GitHubAppService {
     }
   }
 }
+
+// Export singleton helper for backward compatibility
+export const githubAppService = {
+  async getInstallationToken(orgId: string, repoFullName: string): Promise<string> {
+    // TODO: Implement GitHub App installation token fetching
+    const token = process.env.GITHUB_TOKEN || process.env.GITHUB_INSTALLATION_TOKEN;
+    if (!token) {
+      throw new AuthenticationError('GitHub token not configured');
+    }
+    return token;
+  },
+
+  async getRepoInfo(token: string, repoFullName: string) {
+    const [owner, repo] = repoFullName.split('/');
+    const service = new GitHubAppService(token, owner, repo);
+    const repoData = await service.getRepository();
+    return {
+      defaultBranch: repoData.default_branch,
+      defaultBranchSha: '', // Would need to fetch from refs
+    };
+  },
+
+  async createBranch(token: string, repoFullName: string, branchName: string, baseSha: string) {
+    const [owner, repo] = repoFullName.split('/');
+    const service = new GitHubAppService(token, owner, repo);
+    await service.createBranch(branchName, baseSha);
+  },
+
+  async commitFiles(
+    token: string,
+    repoFullName: string,
+    branchName: string,
+    files: Array<{ path: string; content: string }>,
+    message: string
+  ): Promise<string> {
+    const [owner, repo] = repoFullName.split('/');
+    const service = new GitHubAppService(token, owner, repo);
+    return await service.commitFiles(branchName, files, message);
+  },
+
+  async createPullRequest(
+    token: string,
+    repoFullName: string,
+    headBranch: string,
+    baseBranch: string,
+    title: string,
+    body: string
+  ): Promise<string> {
+    const [owner, repo] = repoFullName.split('/');
+    const service = new GitHubAppService(token, owner, repo);
+    const pr = await service.createPullRequest(title, body, baseBranch, headBranch);
+    return pr.html_url;
+  },
+};

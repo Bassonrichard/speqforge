@@ -1,16 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
+import { Loader2, GitBranch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 /**
- * GitHub OAuth Login Page
- * Redirects to GitHub for authentication
+ * Login form component (uses useSearchParams)
  */
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -58,26 +57,31 @@ export default function LoginPage() {
   const errorMessage = searchParams.get('error');
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4">
-      <div className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#FFF8F0] via-[#F4F1EA] to-[#FFF8F0] px-4 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-br from-[#FF6B35]/10 to-[#FF8C42]/10 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-br from-[#FF8C42]/10 to-[#FF6B35]/10 rounded-full blur-3xl"></div>
+
+      <div className="w-full max-w-md relative z-10">
         {/* Logo */}
-        <div className="mb-8 text-center">
-          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-blue-600">
-            <span className="text-xl font-bold text-white">SQ</span>
+        <div className="mb-10 text-center">
+          <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-xl border border-[#E0DCD4] p-2.5">
+            <img src="/logos/favicon-96x96.png" alt="SeqForge" className="w-full h-full" />
           </div>
-          <h1 className="text-3xl font-bold text-white">SeqForge</h1>
-          <p className="mt-2 text-slate-400">Specification-driven development portal</p>
+          <h1 className="text-4xl font-bold text-[#2A2A2A] mb-2" style={{ fontFamily: 'var(--font-ibm-plex-mono)' }}>SeqForge</h1>
+          <p className="text-sm uppercase tracking-widest text-[#6B6B6B]" style={{ fontFamily: 'var(--font-ibm-plex-mono)' }}>Portal</p>
+          <p className="mt-3 text-[#6B6B6B] leading-relaxed">Specification-driven development platform</p>
         </div>
 
         {/* Card */}
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-8 backdrop-blur-sm">
-          <h2 className="mb-6 text-center text-xl font-semibold text-white">
-            Sign in to SeqForge
+        <div className="rounded-2xl border-2 border-[#E0DCD4] bg-white/95 backdrop-blur-sm p-8 shadow-2xl">
+          <h2 className="mb-6 text-center text-xl font-bold text-[#2A2A2A]" style={{ fontFamily: 'var(--font-ibm-plex-mono)' }}>
+            SIGN IN TO CONTINUE
           </h2>
 
           {/* Error Message */}
           {(error || errorMessage) && (
-            <div className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
+            <div className="mb-6 rounded-xl border-2 border-[#D64545]/20 bg-[#D64545]/10 p-4 text-sm text-[#D64545]" style={{ fontFamily: 'var(--font-ibm-plex-mono)' }}>
               {error || 'Authentication failed. Please try again.'}
             </div>
           )}
@@ -87,36 +91,54 @@ export default function LoginPage() {
             onClick={handleGitHubSignIn}
             disabled={isLoading}
             size="lg"
-            className="w-full"
+            className="w-full bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] hover:from-[#E55A2B] hover:to-[#E77A34] text-white px-6 py-6 text-sm font-bold group transition-all duration-300 shadow-lg hover:shadow-xl rounded-xl border-none"
+            style={{ fontFamily: 'var(--font-ibm-plex-mono)' }}
           >
             {isLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                SIGNING IN...
               </>
             ) : (
               <>
-                Sign in with GitHub
+                <GitBranch className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
+                SIGN IN WITH GITHUB
               </>
             )}
           </Button>
 
           {/* Info Text */}
-          <p className="mt-4 text-center text-sm text-slate-400">
-            We use GitHub for secure authentication. You can choose public or private repos.
+          <p className="mt-5 text-center text-xs text-[#6B6B6B] leading-relaxed">
+            We use GitHub for secure authentication. Choose between public or private repository access.
           </p>
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-xs text-slate-500">
+        <div className="mt-8 text-center text-xs text-[#6B6B6B]" style={{ fontFamily: 'var(--font-ibm-plex-mono)' }}>
           <p>
             By signing in, you agree to our{' '}
-            <Link href="/terms" className="text-blue-400 hover:text-blue-300">
+            <Link href="/terms" className="text-[#FF6B35] hover:text-[#E55A2B] font-semibold transition-colors">
               Terms of Service
             </Link>
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * GitHub OAuth Login Page
+ * Redirects to GitHub for authentication
+ */
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#FFF8F0] via-[#F4F1EA] to-[#FFF8F0]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#FF6B35]" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

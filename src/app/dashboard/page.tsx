@@ -237,7 +237,9 @@ export default function DashboardPage() {
                 Contact your administrator to be added to an organization, or create a new one to get started.
               </p>
             </div>
-            <Button className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] hover:from-[#E55A2B] hover:to-[#E77A34] text-white px-8 py-6 text-sm font-semibold group transition-all duration-300 shadow-lg hover:shadow-xl rounded-xl border-none"
+            <Button 
+              onClick={() => alert('Organization creation coming soon! For now, an organization is automatically created when you sign in.')}
+              className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] hover:from-[#E55A2B] hover:to-[#E77A34] text-white px-8 py-6 text-sm font-semibold group transition-all duration-300 shadow-lg hover:shadow-xl rounded-xl border-none"
               style={{ fontFamily: 'var(--font-ibm-plex-mono)' }}
             >
               <Plus className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />

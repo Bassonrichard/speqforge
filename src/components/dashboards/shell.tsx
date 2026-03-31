@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, LogOut, Settings, LayoutDashboard, FileText, FolderOpen, Bell } from 'lucide-react';
@@ -24,7 +24,15 @@ interface DashboardShellProps {
 export default function DashboardShell({ children, user }: DashboardShellProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const notification = useUIStore((state) => state.notifications.length > 0);
+  const [mounted, setMounted] = useState(false);
+  
+  // Only access store after hydration to prevent mismatch
+  const notifications = useUIStore((state) => state.notifications);
+  const hasNotifications = mounted && notifications.length > 0;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const navigationItems = [
     {
@@ -155,7 +163,7 @@ export default function DashboardShell({ children, user }: DashboardShellProps) 
               {/* Notifications bell */}
               <button className="relative p-2.5 text-[#2A2A2A] border border-[#E0DCD4] hover:bg-[#F4F1EA] transition-all duration-200 rounded-lg hover:shadow-md">
                 <Bell className="h-5 w-5" />
-                {notification && (
+                {hasNotifications && (
                   <span className="absolute top-1 right-1 h-2 w-2 bg-[#FF6B35] border-2 border-white rounded-full animate-pulse" />
                 )}
               </button>

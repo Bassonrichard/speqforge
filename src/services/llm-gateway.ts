@@ -271,3 +271,20 @@ export async function generateSpecDraft(
 
   return response.content;
 }
+
+// Export singleton helper for backward compatibility
+export const llmGateway = {
+  async callProvider(prompt: string, provider?: LLMProvider, orgId?: string): Promise<string> {
+    // TODO: Fetch org's configured provider and key from database
+    const actualProvider = provider || 'openai';
+    const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || '';
+    
+    if (!apiKey) {
+      throw new LLMError('No API key configured. Please configure your LLM provider in settings.', actualProvider);
+    }
+
+    const gateway = new LLMGateway(actualProvider, apiKey);
+    const response = await gateway.call(prompt);
+    return response.content;
+  },
+};

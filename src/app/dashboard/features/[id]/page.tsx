@@ -6,8 +6,10 @@
 'use client';
 
 import Link from 'next/link';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useFeature } from '@/hooks/use-projects-features';
+import { SpecEditor } from '@/components/spec-editor/spec-editor';
 
 interface FeatureDetailPageProps {
   params: Promise<{ id: string }>;
@@ -77,15 +79,12 @@ export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
         </div>
       </div>
 
-      {/* Spec Editor Placeholder */}
-      <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-3">Spec Generation</h2>
-        <p className="text-gray-600 mb-6">
-          AI-powered specification generation coming in Phase 3.2
-        </p>
-        <p className="text-sm text-gray-500">
-          The spec editor will appear here once we integrate with your LLM provider
-        </p>
+      {/* Spec Editor */}
+      <div className="rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">Specification</h2>
+        </div>
+        <SpecEditor featureId={featureId} />
       </div>
 
       {/* Linked Repositories */}
@@ -153,5 +152,3 @@ export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
     </div>
   );
 }
-
-import React from 'react';

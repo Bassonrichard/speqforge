@@ -161,11 +161,37 @@ export async function authenticateFromGitHub(githubUser: {
   });
 
   // Get user's organizations
-  const memberships = await db.orgMember.findMany({
+  let memberships = await db.orgMember.findMany({
     where: { userId: user.id },
     include: { organization: true },
     take: 1, // Get first org as default
   });
+
+  // If user has no organizations, create a default one
+  if (memberships.length === 0) {
+    await db.organization.create({
+      data: {
+        name: `${user.username}'s Workspace`,
+        aiSettings: {
+          defaultProvider: 'openai',
+          providers: ['openai', 'anthropic'],
+        },
+        members: {
+          create: {
+            userId: user.id,
+            role: 'owner',
+          },
+        },
+      },
+    });
+
+    // Refetch memberships after creating the org
+    memberships = await db.orgMember.findMany({
+      where: { userId: user.id },
+      include: { organization: true },
+      take: 1,
+    });
+  }
 
   const defaultOrg = memberships[0];
 
