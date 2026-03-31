@@ -5,7 +5,7 @@ import { auditService } from '@/services/audit-service';
 import { z } from 'zod';
 
 const saveKeySchema = z.object({
-  provider: z.enum(['openai', 'anthropic', 'google_ai', 'github_copilot']),
+  provider: z.enum(['openai', 'anthropic', 'google_ai', 'github_copilot', 'openai_codex']),
   apiKey: z.string().min(10).optional(),
   authType: z.enum(['api_key', 'oauth']).default('api_key'),
   accessToken: z.string().optional(),

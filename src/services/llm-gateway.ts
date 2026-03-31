@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { LLMError, RateLimitError, ValidationError } from '@/types/errors';
 import { decryptKey } from '@/lib/crypto';
 
-export type LLMProvider = 'openai' | 'anthropic' | 'google_ai';
+export type LLMProvider = 'openai' | 'anthropic' | 'google_ai' | 'openai_codex';
 
 export interface LLMCallOptions {
   model?: string;
@@ -64,6 +64,7 @@ export class LLMGateway {
     try {
       switch (this.provider) {
         case 'openai':
+        case 'openai_codex':
           return await this.callOpenAI(prompt, { temperature, maxTokens, systemPrompt });
         case 'anthropic':
           return await this.callAnthropic(prompt, { temperature, maxTokens, systemPrompt });

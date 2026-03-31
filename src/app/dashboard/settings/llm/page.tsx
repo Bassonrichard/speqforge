@@ -104,6 +104,7 @@ export default function LLMSettingsPage() {
     { value: 'openai', label: 'OpenAI', authType: 'api_key', placeholder: 'sk-...', description: 'GPT-4, GPT-3.5-Turbo' },
     { value: 'anthropic', label: 'Anthropic', authType: 'api_key', placeholder: 'sk-ant-...', description: 'Claude-3 models' },
     { value: 'google_ai', label: 'Google AI', authType: 'api_key', placeholder: 'AIza...', description: 'Gemini models' },
+    { value: 'openai_codex', label: 'OpenAI Codex (OAuth)', authType: 'oauth', description: 'Use your ChatGPT Plus/Pro subscription' },
     { value: 'github_copilot', label: 'GitHub Copilot', authType: 'oauth', description: 'GitHub Models via OAuth' },
   ];
 

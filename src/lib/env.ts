@@ -16,6 +16,10 @@ const envSchema = z.object({
   GITHUB_OAUTH_CLIENT_ID: z.string().optional(),
   GITHUB_OAUTH_CLIENT_SECRET: z.string().optional(),
   
+  // OpenAI OAuth (for Codex)
+  OPENAI_OAUTH_CLIENT_ID: z.string().optional(),
+  OPENAI_OAUTH_CLIENT_SECRET: z.string().optional(),
+  
   // LLM Providers (BYOK - optionally set defaults, but users will provide keys)
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),

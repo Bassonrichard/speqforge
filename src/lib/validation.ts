@@ -122,7 +122,7 @@ export type HandoffInputType = z.infer<typeof HandoffInput>;
 // ============================================================================
 
 export const LLMProviderKeyInput = z.object({
-  provider: z.enum(['openai', 'anthropic', 'google_ai']),
+  provider: z.enum(['openai', 'anthropic', 'google_ai', 'openai_codex']),
   apiKey: z.string().min(1, 'API key is required'),
   makeDefault: z.boolean().default(false),
   testKey: z.boolean().default(true), // Test the key before saving

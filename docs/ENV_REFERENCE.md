@@ -76,6 +76,10 @@ GITHUB_APP_WEBHOOK_SECRET=abc123def456...
 NEXT_PUBLIC_GITHUB_CLIENT_ID=Iv2.abc123def456789
 GITHUB_OAUTH_CLIENT_SECRET=secret_abc123def456...
 
+# OpenAI OAuth (for Codex BYOK - optional):
+OPENAI_OAUTH_CLIENT_ID=your_openai_client_id
+OPENAI_OAUTH_CLIENT_SECRET=your_openai_client_secret
+
 # Auto-generated (you already have these):
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=be33a3342959d8cd16cb66fe489e1be6a1c30c20c18f3bbf0c07fe5a682c91f9
@@ -92,6 +96,8 @@ DATABASE_URL=file:./dev.db
 | `GITHUB_APP_WEBHOOK_SECRET` | `abc123def456...` | Hex string (0-9, a-f), 64 chars |
 | `NEXT_PUBLIC_GITHUB_CLIENT_ID` | `Iv2.abc123...` | Starts with `Iv2.`, no quotes needed |
 | `GITHUB_OAUTH_CLIENT_SECRET` | `ghs_abc123...` or `secret_abc...` | Must be non-empty, no quotes |
+| `OPENAI_OAUTH_CLIENT_ID` | `your_client_id` | Optional, for Codex OAuth |
+| `OPENAI_OAUTH_CLIENT_SECRET` | `your_client_secret` | Optional, for Codex OAuth |
 | `NEXTAUTH_SECRET` | `be33a334...` | 64 hex chars |
 | `ENCRYPTION_KEY` | `32d33052...` | 64 hex chars, exactly 32 bytes |
 
@@ -163,7 +169,9 @@ GITHUB_APP_WEBHOOK_SECRET=abc123def456789abc123def456789abc123def456789abc123def
 # GitHub OAuth
 NEXT_PUBLIC_GITHUB_CLIENT_ID=Iv2.abc123def456789
 GITHUB_OAUTH_CLIENT_SECRET=secret_ghs_abc123def456789abc123def456789
-
+# OpenAI OAuth (optional - for Codex BYOK)
+OPENAI_OAUTH_CLIENT_ID=your_openai_client_id
+OPENAI_OAUTH_CLIENT_SECRET=your_openai_client_secret
 # Auth & Security
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=be33a3342959d8cd16cb66fe489e1be6a1c30c20c18f3bbf0c07fe5a682c91f9

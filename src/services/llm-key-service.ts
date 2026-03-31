@@ -154,5 +154,42 @@ async function refreshOAuthToken(
     };
   }
 
+  if (provider === 'openai_codex') {
+    // Refresh OpenAI token
+    const response = await fetch('https://auth.openai.com/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: process.env.OPENAI_OAUTH_CLIENT_ID,
+        client_secret: process.env.OPENAI_OAUTH_CLIENT_SECRET,
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to refresh OpenAI token: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(`OpenAI token refresh error: ${data.error}`);
+    }
+
+    const { access_token, expires_in } = data;
+    const { encryptedKey, iv } = encryptKey(access_token);
+
+    return {
+      accessToken: access_token,
+      encryptedKey,
+      iv,
+      expiresAt: new Date(Date.now() + expires_in * 1000),
+    };
+  }
+
   throw new Error(`Token refresh not implemented for provider: ${provider}`);
 }
