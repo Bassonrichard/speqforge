@@ -9,7 +9,10 @@ import Link from 'next/link';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useFeature } from '@/hooks/use-projects-features';
+import { useFeatureHistory } from '@/hooks/use-feature-history';
 import { SpecEditor } from '@/components/spec-editor/spec-editor';
+import { StatusBadge, type FeatureStatus } from '@/components/ui/status-badge';
+import { StatusTimeline } from '@/components/ui/status-timeline';
 
 interface FeatureDetailPageProps {
   params: Promise<{ id: string }>;
@@ -25,6 +28,33 @@ export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
   }, [params]);
 
   const { data: feature, isLoading, error } = useFeature(featureId);
+  const { data: history, isLoading: historyLoading } = useFeatureHistory(featureId);
+
+  const handleStatusTransition = async (newStatus: FeatureStatus) => {
+    if (!featureId) return;
+
+    try {
+      const response = await fetch(`/api/features/${featureId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(`Failed to update status: ${error.error}`);
+        return;
+      }
+
+      // Refresh the feature data
+      window.location.reload();
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert('Failed to update status. Please try again.');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -60,7 +90,9 @@ export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="rounded-lg border border-gray-200 p-4">
             <p className="text-sm text-gray-600">Status</p>
-            <p className="mt-1 text-lg font-semibold text-gray-900">{feature.status}</p>
+            <div className="mt-2">
+              <StatusBadge status={feature.status as FeatureStatus} />
+            </div>
           </div>
           <div className="rounded-lg border border-gray-200 p-4">
             <p className="text-sm text-gray-600">Project</p>
@@ -79,12 +111,72 @@ export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
         </div>
       </div>
 
+      {/* Status Actions */}
+      <div className="rounded-lg border border-gray-200 p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Status Actions</h2>
+        <div className="flex flex-wrap gap-3">
+          {feature.status === 'DRAFT' && (
+            <Button onClick={() => handleStatusTransition('IN_REVIEW')}>
+              Request Review
+            </Button>
+          )}
+          {feature.status === 'IN_REVIEW' && (
+            <>
+              <Button onClick={() => handleStatusTransition('APPROVED')}>
+                Approve
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleStatusTransition('REJECTED')}
+              >
+                Reject
+              </Button>
+            </>
+          )}
+          {feature.status === 'REJECTED' && (
+            <Button onClick={() => handleStatusTransition('DRAFT')}>
+              Return to Draft
+            </Button>
+          )}
+          {feature.status === 'APPROVED' && (
+            <Button onClick={() => handleStatusTransition('HANDED_OFF')}>
+              Hand Off to Engineering
+            </Button>
+          )}
+          {['HANDED_OFF', 'IN_PROGRESS', 'COMPLETE'].includes(feature.status) && (
+            <p className="text-sm text-gray-600 py-2">
+              Status is automatically managed by GitHub integration
+            </p>
+          )}
+        </div>
+      </div>
+
       {/* Spec Editor */}
       <div className="rounded-lg border border-gray-200 overflow-hidden">
         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900">Specification</h2>
         </div>
         <SpecEditor featureId={featureId} />
+      </div>
+
+      {/* Status History Timeline */}
+      <div className="rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">Status History</h2>
+        </div>
+        <div className="p-6">
+          {historyLoading ? (
+            <div className="h-32 animate-pulse rounded bg-gray-200" />
+          ) : (
+            <StatusTimeline
+              entries={(history || []).map((h) => ({
+                ...h,
+                status: h.status as FeatureStatus,
+                timestamp: new Date(h.timestamp),
+              }))}
+            />
+          )}
+        </div>
       </div>
 
       {/* Linked Repositories */}

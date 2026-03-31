@@ -309,32 +309,33 @@ Break down SeqForge Portal implementation into parallel-able, independently test
   - Set Feature.status = COMPLETE (after all repos merged? or first?)
   - Record merge commit SHA
   - Create WebhookEvent log entry
-- [ ] T112 [P] Create Feature status transition logic in `src/services/approval-service.ts`:
+- [X] T112 [P] Create Feature status transition logic in `src/services/approval-service.ts`:
   - Validate transitions: Draft → Approved (manual) → Handed Off (manual) → In Progress (auto) → Complete (auto)
   - Prevent invalid transitions
-- [ ] T113 Create feature detail page to show current Feature.status prominently:
+- [X] T113 Create feature detail page to show current Feature.status prominently:
   - Display status badge (DRAFT / APPROVED / HANDED_OFF / IN_PROGRESS / COMPLETE)
   - Show transition buttons (only valid transitions available)
   - Show approver info (who approved, when)
   - Show handoff info (branch names, PR URLs)
-- [ ] T114 [P] Add status history/timeline UI: show all status transitions with timestamps
-- [ ] T115 [P] Create status dashboard component `src/components/dashboards/feature-list.tsx`:
+- [X] T114 [P] Add status history/timeline UI: show all status transitions with timestamps
+- [X] T115 [P] Create status dashboard component `src/components/dashboards/feature-list.tsx`:
   - Table: Feature | Status | Project | Created | Last Updated | Actions
   - Filter by project, status
   - Sort by created/updated date
-- [ ] T116 Create status update API:
+- [X] T116 Create status update API:
   - POST `src/app/api/features/[id]/status/route.ts` → validate transition, update status (for manual transitions)
-- [ ] T117 [P] Implement webhook event processing as background task (for MVP, can be synchronous):
+- [X] T117 [P] Implement webhook event processing as background task (for MVP, can be synchronous):
   - POST to /api/github/webhook → parse → update status
   - Error handling: log failures to WebhookEvent table, can retry
-- [ ] T118 Create TanStack Query hook `src/hooks/use-feature-list.ts` with status filter
+  - NOTE: Webhook handlers created in T109-T111, event logging via WebhookEvent table
+- [X] T118 Create TanStack Query hook `src/hooks/use-feature-list.ts` with status filter
 - [ ] T119 [P] Unit test status transitions: verify valid states, reject invalid
 - [ ] T120 [P] Integration test webhook handler:
   - POST simulated GitHub webhook → verify Feature.status updated in DB
   - Test signature verification (valid signature accepted, invalid rejected)
 - [ ] T121 [P] E2E test: feature lifecycle (create → approve → hand off → simulate PR open → check status updates)
-- [ ] T122 Create Feature.completedAt timestamp, set on final merge
-- [ ] T123 [P] Add audit log entries for all status transitions
+- [X] T122 Create Feature.completedAt timestamp, set on final merge
+- [X] T123 [P] Add audit log entries for all status transitions
 - [ ] T124 [P] Implement optional manual status override for admins (in case webhook misses event)
 - [ ] T125 [P] Add webhook event retry logic (failed processing, retry up to 3x)
 - [ ] T126 [P] Test with multiple repos: feature only moves to COMPLETE after ALL repos' PRs merged
@@ -347,31 +348,31 @@ Break down SeqForge Portal implementation into parallel-able, independently test
 
 ## US6: Organization-Level BYOK Configuration
 
-**Goal**: Org admins configure LLM provider keys (OpenAI, Anthropic, etc.). Keys encrypted, server-side only.
+**Goal**: Org admins configure LLM provider keys (OpenAI, Anthropic, etc.) or OAuth tokens (GitHub Copilot). Keys encrypted, server-side only.
 
 **Independent Test**: Admin adds OpenAI key → save → generate spec uses that key → verify no key exposure to frontend.
 
 ### Implementation (T129-T143)
 
-- [ ] T129 Create BYOK settings page `src/app/(dashboard)/settings/llm/page.tsx` (admin-only)
-- [ ] T130 [P] Create LLM provider selector UI component `src/components/settings/llm-provider-form.tsx`:
-  - Dropdown: OpenAI, Anthropic, Google AI, etc.
-  - Text input (password type) for API key
-  - "Save" button → POST /api/llm/keys
-- [ ] T131 Implement LLM key storage API route `src/app/api/llm/keys/route.ts`:
-  - PUT → receive provider + plaintext key
+- [X] T129 Create BYOK settings page `src/app/(dashboard)/settings/llm/page.tsx` (admin-only)
+- [X] T130 [P] Create LLM provider selector UI component `src/components/settings/llm-provider-form.tsx`:
+  - Dropdown: OpenAI, Anthropic, Google AI, GitHub Copilot (OAuth)
+  - Text input (password type) for API key OR OAuth button
+  - "Save" / "Connect" button → POST /api/llm/keys or OAuth flow
+- [X] T131 Implement LLM key storage API route `src/app/api/llm/keys/route.ts`:
+  - PUT → receive provider + plaintext key OR OAuth credentials
   - Encrypt using `src/lib/crypto.ts`
   - Save UserKey record to DB
   - Return masked key (e.g., `sk-...xyz`)
-- [ ] T132 [P] GET `/api/llm/keys/route.ts` → list configured providers (masked, no actual keys)
-- [ ] T133 Implement default provider selector UI in settings (radio buttons)
+- [X] T132 [P] GET `/api/llm/keys/route.ts` → list configured providers (masked, no actual keys)
+- [X] T133 Implement default provider selector UI in settings (radio buttons)
 - [ ] T134 Create approver/role selector UI in settings: map users to roles (APPROVER, REVIEWER, MEMBER, ADMIN)
-- [ ] T135 [P] Update llm-gateway to use org-configured keys:
+- [X] T135 [P] Update llm-gateway to use org-configured keys:
   - Load key from UserKey table on each call
   - Decrypt in-memory
   - Use with provider SDK
   - Never log or expose plaintext key
-- [ ] T136 Create settings page authentication guard: verify user is org ADMIN
+- [X] T136 Create settings page authentication guard: verify user is org ADMIN
 - [ ] T137 [P] Unit test crypto functions: encrypt → decrypt round-trip, test with various key formats
 - [ ] T138 [P] Integration test key storage: POST /api/llm/keys with valid key → verify encrypted in DB, GET returns masked version
 - [ ] T139 [P] E2E test: admin saves key → user generates spec → verify spec generation succeeds without key exposure to network
@@ -390,19 +391,19 @@ Break down SeqForge Portal implementation into parallel-able, independently test
 
 ### Implementation (T144-T156)
 
-- [ ] T144 Create template management page `src/app/(dashboard)/settings/templates/page.tsx` (admin-only)
-- [ ] T145 [P] Create template upload UI component `src/components/settings/template-upload.tsx`:
+- [X] T144 Create template management page `src/app/(dashboard)/settings/templates/page.tsx` (admin-only)
+- [X] T145 [P] Create template upload UI component `src/components/settings/template-upload.tsx`:
   - File input (Markdown)
   - Template name input
   - "Upload" button → POST /api/templates
-- [ ] T146 Implement template upload API `src/app/api/templates/route.ts`:
+- [X] T146 Implement template upload API `src/app/api/templates/route.ts`:
   - POST → receive file, validate placeholders (required: User Scenarios, Functional Requirements, Success Criteria, Assumptions)
   - Save SpecTemplate to DB
   - Activate as current default (optional)
-- [ ] T147 [P] GET `/api/templates/route.ts` → list all templates for org
-- [ ] T148 [P] DELETE `/api/templates/[id]/route.ts` → delete template (admin-only, can't delete if active)
+- [X] T147 [P] GET `/api/templates/route.ts` → list all templates for org
+- [X] T148 [P] DELETE `/api/templates/[id]/route.ts` → delete template (admin-only, can't delete if active)
 - [ ] T149 Create template editor: show template preview before saving
-- [ ] T150 Create template selector in feature creation flow: radio buttons / dropdown for available templates
+- [X] T150 Create template selector in feature creation flow: radio buttons / dropdown for available templates
 - [ ] T151 [P] Update spec-service to apply selected template during generation:
   - Load template content from SpecTemplate
   - Pass to LLM prompt: "Generate spec following this template: [...template placeholders...]"

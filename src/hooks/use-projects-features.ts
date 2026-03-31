@@ -138,13 +138,20 @@ export function useDetachRepository(projectId: string, options?: { onSuccess?: (
 /**
  * Hook to fetch all features for current org, with optional filters
  */
-export function useFeatureList(filters?: { projectId?: string; status?: string }) {
+export function useFeatureList(filters?: { 
+  projectId?: string; 
+  status?: string;
+  sortBy?: 'createdAt' | 'updatedAt';
+  sortOrder?: 'asc' | 'desc';
+}) {
   return useQuery({
     queryKey: featureKeys.list(filters),
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters?.projectId) params.set('projectId', filters.projectId);
       if (filters?.status) params.set('status', filters.status);
+      if (filters?.sortBy) params.set('sortBy', filters.sortBy);
+      if (filters?.sortOrder) params.set('sortOrder', filters.sortOrder);
 
       const res = await fetch(`/api/features?${params}`);
       const data = await res.json();
@@ -177,7 +184,7 @@ export function useCreateFeature(options?: { onSuccess?: (data: unknown) => void
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: { projectId: string; title: string; description: string }) => {
+    mutationFn: async (input: { projectId: string; title: string; description: string; templateId?: string }) => {
       const res = await fetch('/api/features', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

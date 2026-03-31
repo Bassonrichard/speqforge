@@ -29,7 +29,7 @@ export interface LLMResponse {
  * Manages encryption/decryption of API keys
  */
 export class LLMGateway {
-  private provider: LLMProvider;
+  public provider: LLMProvider;
   private apiKey: string;
   private encryptedKeyIv?: string;
 
@@ -246,6 +246,47 @@ export async function getLLMGateway(
 }
 
 /**
+ * Call LLM provider using organization's configured keys
+ * This is the main entry point for spec generation and clarification
+ */
+async function callProvider(
+  prompt: string,
+  providerOverride: LLMProvider | undefined,
+  orgId: string,
+  options?: { temperature?: number; maxTokens?: number; systemPrompt?: string }
+): Promise<string> {
+  const { createOrgLLMGateway } = await import('./llm-key-service');
+  
+  const gateway = await createOrgLLMGateway(orgId);
+  
+  // If provider override specified, re-create gateway with that provider
+  if (providerOverride && providerOverride !== gateway.provider) {
+    const { loadOrgLLMCredentials } = await import('./llm-key-service');
+    const credentials = await loadOrgLLMCredentials(orgId);
+    
+    // Check if org has this provider configured
+    if (credentials.provider !== providerOverride) {
+      throw new Error(`Provider ${providerOverride} not configured for organization`);
+    }
+  }
+
+  const response = await gateway.call(prompt, {
+    temperature: options?.temperature ?? 0.7,
+    maxTokens: options?.maxTokens ?? 4000,
+    systemPrompt: options?.systemPrompt ?? 'You are a helpful assistant specializing in software specification writing.',
+  });
+
+  return response.content;
+}
+
+/**
+ * Singleton-style gateway for backwards compatibility
+ */
+export const llmGateway = {
+  callProvider,
+};
+
+/**
  * Quick spec generation helper
  */
 export async function generateSpecDraft(
@@ -272,19 +313,3 @@ export async function generateSpecDraft(
   return response.content;
 }
 
-// Export singleton helper for backward compatibility
-export const llmGateway = {
-  async callProvider(prompt: string, provider?: LLMProvider, orgId?: string): Promise<string> {
-    // TODO: Fetch org's configured provider and key from database
-    const actualProvider = provider || 'openai';
-    const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || '';
-    
-    if (!apiKey) {
-      throw new LLMError('No API key configured. Please configure your LLM provider in settings.', actualProvider);
-    }
-
-    const gateway = new LLMGateway(actualProvider, apiKey);
-    const response = await gateway.call(prompt);
-    return response.content;
-  },
-};

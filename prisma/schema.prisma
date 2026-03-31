@@ -69,9 +69,15 @@ model OrgMember {
 model UserKey {
   id            String    @id @default(cuid())
   orgId         String
-  provider      String    // openai | anthropic | google_ai | etc.
-  encryptedKey  String    // AES-256-GCM encrypted key
+  provider      String    // openai | anthropic | google_ai | github_copilot | etc.
+  authType      String    @default("api_key") // api_key | oauth
+  encryptedKey  String    // AES-256-GCM encrypted key or access token
   iv            String    // Initialization vector for decryption
+  refreshToken  String?   // For OAuth providers (encrypted)
+  refreshTokenIv String?  // IV for refresh token
+  expiresAt     DateTime? // Token expiration for OAuth
+  maskedKey     String?   // Masked version for display (e.g., "sk-...xyz")
+  isDefault     Boolean   @default(false) // Default provider for org
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -79,6 +85,7 @@ model UserKey {
 
   @@unique([orgId, provider])
   @@index([orgId])
+  @@index([orgId, isDefault])
 }
 
 // ============================================================================

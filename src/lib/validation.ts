@@ -54,6 +54,7 @@ export const CreateFeatureInput = z.object({
   title: z.string().min(1, 'Feature title is required').max(255),
   description: z.string().min(10, 'Feature description must be at least 10 characters').max(5000),
   projectId: z.string().cuid('Invalid project ID'),
+  templateId: z.string().cuid('Invalid template ID').optional(),
 });
 
 export type CreateFeatureInputType = z.infer<typeof CreateFeatureInput>;

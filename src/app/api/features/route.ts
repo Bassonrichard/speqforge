@@ -24,6 +24,8 @@ export const GET = withAuth(async (req, { session }) => {
   const url = new URL(req.url);
   const projectId = url.searchParams.get('projectId');
   const status = url.searchParams.get('status');
+  const sortBy = url.searchParams.get('sortBy') || 'createdAt';
+  const sortOrder = url.searchParams.get('sortOrder') || 'desc';
 
   const features = await db.feature.findMany({
     where: {
@@ -52,7 +54,7 @@ export const GET = withAuth(async (req, { session }) => {
         take: 1,
       },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { [sortBy]: sortOrder },
   });
 
   return Response.json(

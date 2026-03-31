@@ -1,6 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { templateService } from '@/services/template-service';
+import { withAuth } from '@/lib/api-middleware';
+import { apiResponse } from '@/lib/utils';
+import { isOrgAdmin } from '@/lib/auth';
 import { z } from 'zod';
+import { db } from '@/lib/db';
 
 const createTemplateSchema = z.object({
   name: z.string().min(1),
@@ -8,40 +12,67 @@ const createTemplateSchema = z.object({
   setAsDefault: z.boolean().optional(),
 });
 
-export async function GET(request: NextRequest) {
-  try {
-    // TODO: Get authenticated user and orgId from session
-    const orgId = request.headers.get('x-org-id') || 'default-org';
+/**
+ * GET /api/templates
+ * List all templates for the organization
+ */
+export const GET = withAuth(async (req, { session }) => {
+  const orgId = session.orgId;
 
-    const templates = await templateService.getTemplates(orgId);
-
-    return NextResponse.json({
-      success: true,
-      data: templates,
-    });
-  } catch (error) {
-    console.error('Error fetching templates:', error);
-    return NextResponse.json(
+  if (!orgId) {
+    return Response.json(
+      apiResponse(false, null, { code: 'NO_ORG', message: 'Organization context required' }),
       {
-        success: false,
-        error: 'Failed to fetch templates',
-      },
-      { status: 500 }
+        status: 400,
+      }
     );
   }
-}
 
-export async function POST(request: NextRequest) {
+  const templates = await templateService.getTemplates(orgId);
+
+  return Response.json(apiResponse(true, templates), { status: 200 });
+});
+
+/**
+ * POST /api/templates
+ * Create a new template (admin only)
+ */
+export const POST = withAuth(async (req, { session }) => {
+  const orgId = session.orgId;
+  const userId = session.userId;
+
+  if (!orgId) {
+    return Response.json(
+      apiResponse(false, null, { code: 'NO_ORG', message: 'Organization context required' }),
+      {
+        status: 400,
+      }
+    );
+  }
+
+  // Check if user is org admin
+  if (!(await isOrgAdmin(session))) {
+    return Response.json(
+      apiResponse(false, null, { code: 'FORBIDDEN', message: 'Admin access required' }),
+      {
+        status: 403,
+      }
+    );
+  }
+
+  const body = await req.json();
+  const validation = createTemplateSchema.safeParse(body);
+
+  if (!validation.success) {
+    return Response.json(
+      apiResponse(false, null, { code: 'VALIDATION_ERROR', message: 'Invalid request data' }),
+      { status: 400 }
+    );
+  }
+
+  const { name, content, setAsDefault } = validation.data;
+
   try {
-    // TODO: Get authenticated user and orgId from session
-    const orgId = request.headers.get('x-org-id') || 'default-org';
-    const userId = request.headers.get('x-user-id') || 'default-user';
-
-    const body = await request.json();
-    const { name, content, setAsDefault } = createTemplateSchema.parse(body);
-
-    // TODO: Check if user is org admin (RBAC)
-
     const template = await templateService.createTemplate(
       orgId,
       name,
@@ -50,27 +81,27 @@ export async function POST(request: NextRequest) {
       setAsDefault
     );
 
-    return NextResponse.json({
-      success: true,
-      data: template,
+    // Audit log
+    await db.auditLog.create({
+      data: {
+        orgId,
+        userId,
+        action: 'template.created',
+        resourceType: 'SpecTemplate',
+        resourceId: template.id,
+        details: JSON.stringify({ name, setAsDefault }),
+      },
     });
+
+    return Response.json(apiResponse(true, template), { status: 201 });
   } catch (error) {
     console.error('Error creating template:', error);
-
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid request data', details: error.issues },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error ? error.message : 'Failed to create template',
-      },
+    return Response.json(
+      apiResponse(false, null, {
+        code: 'SERVER_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to create template',
+      }),
       { status: 500 }
     );
   }
-}
+});

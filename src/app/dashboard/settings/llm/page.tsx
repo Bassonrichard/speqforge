@@ -3,21 +3,53 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Lock, Eye, EyeOff } from 'lucide-react';
+import { Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 interface LLMKey {
   id: string;
   provider: string;
+  authType: string;
   maskedKey: string;
+  isDefault: boolean;
   createdAt: string;
 }
 
+interface Provider {
+  value: string;
+  label: string;
+  authType: 'api_key' | 'oauth';
+  placeholder?: string;
+  description: string;
+}
+
+interface SessionPayload {
+  userId: string;
+  username: string;
+  email: string | null;
+  avatarUrl: string | null;
+  orgId: string | null;
+  orgRole?: 'owner' | 'admin' | 'member';
+}
+
 export default function LLMSettingsPage() {
-  const [selectedProvider, setSelectedProvider] = useState< string>('openai');
+  const [selectedProvider, setSelectedProvider] = useState<string>('openai');
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [setAsDefault, setSetAsDefault] = useState(true);
   const queryClient = useQueryClient();
+
+  // Check if user is admin
+  const { data: sessionData, isLoading: isLoadingSession } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const res = await fetch('/api/auth/user');
+      if (!res.ok) throw new Error('Failed to fetch user');
+      const json = await res.json();
+      return json.data as SessionPayload;
+    },
+  });
+
+  const isAdmin = sessionData?.orgRole === 'owner' || sessionData?.orgRole === 'admin';
 
   // Fetch existing keys
   const { data, isLoading } = useQuery({
@@ -28,7 +60,39 @@ export default function LLMSettingsPage() {
       const json = await res.json();
       return json.data as { keys: LLMKey[]; defaultProvider: string | null };
     },
+    enabled: isAdmin, // Only fetch if admin
   });
+
+  // Show loading state
+  if (isLoadingSession) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  // Show access denied if not admin
+  if (!isAdmin) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <div className="border border-red-200 rounded-lg p-6 bg-red-50">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h2 className="text-lg font-semibold text-red-900 mb-2">
+                Access Denied
+              </h2>
+              <p className="text-red-700">
+                You must be an organization owner or admin to configure LLM API keys.
+                Please contact your organization administrator for access.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Save key mutation
   const saveMutation = useMutation({
@@ -58,15 +122,23 @@ export default function LLMSettingsPage() {
   });
 
   const handleSave = () => {
-    if (!apiKey.trim()) return;
-    saveMutation.mutate();
+    if (selectedProviderInfo?.authType === 'oauth') {
+      // Redirect to OAuth authorization
+      window.location.href = `/api/llm/oauth/${selectedProvider}/authorize`;
+    } else {
+      if (!apiKey.trim()) return;
+      saveMutation.mutate();
+    }
   };
 
-  const providers = [
-    { value: 'openai', label: 'OpenAI', placeholder: 'sk-...' },
-    { value: 'anthropic', label: 'Anthropic', placeholder: 'sk-ant-...' },
-    { value: 'google_ai', label: 'Google AI', placeholder: 'AIza...' },
+  const providers: Provider[] = [
+    { value: 'openai', label: 'OpenAI', authType: 'api_key', placeholder: 'sk-...', description: 'GPT-4, GPT-3.5-Turbo' },
+    { value: 'anthropic', label: 'Anthropic', authType: 'api_key', placeholder: 'sk-ant-...', description: 'Claude-3 models' },
+    { value: 'google_ai', label: 'Google AI', authType: 'api_key', placeholder: 'AIza...', description: 'Gemini models' },
+    { value: 'github_copilot', label: 'GitHub Copilot', authType: 'oauth', description: 'GitHub Models via OAuth' },
   ];
+
+  const selectedProviderInfo = providers.find((p) => p.value === selectedProvider);
 
   return (
     <div className="max-w-4xl mx-auto p-8 space-y-8">
@@ -87,7 +159,7 @@ export default function LLMSettingsPage() {
           {/* Provider Selection */}
           <div>
             <label className="block text-sm font-medium mb-2">Provider</label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {providers.map((provider) => (
                 <label
                   key={provider.value}
@@ -101,40 +173,59 @@ export default function LLMSettingsPage() {
                     onChange={(e) => setSelectedProvider(e.target.value)}
                     className="h-4 w-4"
                   />
-                  <span className="font-medium">{provider.label}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{provider.label}</span>
+                      {provider.authType === 'oauth' && (
+                        <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-800">
+                          OAuth
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{provider.description}</p>
+                  </div>
                 </label>
               ))}
             </div>
           </div>
 
-          {/* API Key Input */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              API Key
-              <Lock className="inline h-3 w-3 ml-1" />
-            </label>
-            <div className="relative">
-              <input
-                type={showKey ? 'text' : 'password'}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder={
-                  providers.find((p) => p.value === selectedProvider)?.placeholder
-                }
-                className="w-full p-3 border rounded-lg pr-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowKey(!showKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+          {/* API Key Input (only for non-OAuth) */}
+          {selectedProviderInfo?.authType === 'api_key' && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                API Key
+                <Lock className="inline h-3 w-3 ml-1" />
+              </label>
+              <div className="relative">
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder={selectedProviderInfo.placeholder}
+                  className="w-full p-3 border rounded-lg pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Your API key is encrypted before storage and never exposed to the browser.
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Your API key is encrypted before storage and never exposed to the browser.
-            </p>
-          </div>
+          )}
+
+          {/* OAuth Info */}
+          {selectedProviderInfo?.authType === 'oauth' && (
+            <div className="rounded-md bg-blue-50 p-4">
+              <p className="text-sm text-blue-800">
+                Click &ldquo;Connect&rdquo; to authenticate with {selectedProviderInfo.label} via OAuth. You&apos;ll be redirected to authorize access.
+              </p>
+            </div>
+          )}
 
           {/* Set as Default */}
           <div>
@@ -149,13 +240,13 @@ export default function LLMSettingsPage() {
             </label>
           </div>
 
-          {/* Save Button */}
+          {/* Save/Connect Button */}
           <Button
             onClick={handleSave}
-            disabled={!apiKey.trim() || saveMutation.isPending}
+            disabled={(selectedProviderInfo?.authType === 'api_key' && !apiKey.trim()) || saveMutation.isPending}
             className="w-full"
           >
-            {saveMutation.isPending ? 'Saving...' : 'Save API Key'}
+            {saveMutation.isPending ? 'Saving...' : selectedProviderInfo?.authType === 'oauth' ? 'Connect with OAuth' : 'Save API Key'}
           </Button>
 
           {saveMutation.isError && (
@@ -188,9 +279,9 @@ export default function LLMSettingsPage() {
                 <div>
                   <p className="font-medium capitalize">{key.provider.replace('_', ' ')}</p>
                   <p className="text-sm text-muted-foreground font-mono">
-                    Key: {key.maskedKey}
+                    {key.authType === 'oauth' ? 'OAuth Token' : `Key: ${key.maskedKey}`}
                   </p>
-                  {data.defaultProvider === key.provider && (
+                  {key.isDefault && (
                     <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">
                       Default
                     </span>
